@@ -1,16 +1,27 @@
-# captain_fit
+# CaptainFit
 
-A new Flutter project.
+CaptainFit is an offline-first mobile fitness & diet assistant (Flutter).
 
-## Getting Started
+## MVP Goals
 
-This project is a starting point for a Flutter application.
+- Log food in a chat-style UI
+- Log workouts from a selection list
+- Store all data locally (SharedPreferences)
+- Minimal, premium dark glass UI
 
-A few resources to get you started if this is your first Flutter project:
+## Getting started
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- flutter pub get
+- flutter run -d <device>
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Project structure
+
+- `lib/auth` — login screen
+- `lib/navigation` — home shell (bottom navigation)
+- `lib/chat` — chat UI for food logging
+- `lib/workout` — workout logging UI
+- `lib/storage` — local storage helpers
+
+## Notes
+
+This is an MVP focused on offline UX and local persistence. Cloud sync and calorie estimation are planned for post-MVP.

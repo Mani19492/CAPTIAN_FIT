@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/glass_background.dart';
 import '../core/glass_card.dart';
-import '../dashboard/dashboard_screen.dart';
+import '../navigation/home_shell.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -14,7 +14,7 @@ class LoginScreen extends StatelessWidget {
 
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => DashboardScreen()),
+      MaterialPageRoute(builder: (_) => const HomeShell()),
     );
   }
 

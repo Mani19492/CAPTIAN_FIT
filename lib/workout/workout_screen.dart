@@ -3,9 +3,14 @@ import '../core/glass_background.dart';
 import '../core/glass_card.dart';
 import '../storage/local_storage.dart';
 
-class WorkoutScreen extends StatelessWidget {
-  WorkoutScreen({super.key});
+class WorkoutScreen extends StatefulWidget {
+  const WorkoutScreen({super.key});
 
+  @override
+  State<WorkoutScreen> createState() => _WorkoutScreenState();
+}
+
+class _WorkoutScreenState extends State<WorkoutScreen> {
   final workouts = [
     'Push Ups 10x3',
     'Squats 15x3',
@@ -29,7 +34,10 @@ class WorkoutScreen extends StatelessWidget {
                         title: Text(w),
                         trailing: IconButton(
                           icon: const Icon(Icons.add),
-                          onPressed: () => LocalStorage.saveWorkout(w),
+                          onPressed: () async {
+                            await LocalStorage.saveWorkout(w);
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved')));
+                          },
                         ),
                       ),
                     ),

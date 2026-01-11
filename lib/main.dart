@@ -33,7 +33,7 @@ class CaptainFitApp extends StatelessWidget {
               body: Center(child: CircularProgressIndicator()),
             );
           }
-          return snapshot.data! ? const HomeShell() : LoginScreen();
+          return snapshot.data! ? const HomeShell() : const LoginScreen();
         },
       ),
     );

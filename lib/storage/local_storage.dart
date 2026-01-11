@@ -17,6 +17,25 @@ class LocalStorage {
     return prefs.getStringList('meals') ?? [];
   }
 
+  /// Returns parsed meal objects as maps with `text` and `time` keys.
+  static Future<List<Map<String, dynamic>>> getParsedMeals() async {
+    final list = await getMeals();
+    return list.map((s) {
+      try {
+        final decoded = jsonDecode(s) as Map<String, dynamic>;
+        return decoded;
+      } catch (_) {
+        // For backwards compatibility, treat plain strings as text only
+        return {'text': s, 'time': ''};
+      }
+    }).toList();
+  }
+
+  static Future<List<String>> getWorkouts() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList('workouts') ?? [];
+  }
+
   static Future<void> saveWorkout(String workout) async {
     final prefs = await SharedPreferences.getInstance();
     final list = prefs.getStringList('workouts') ?? [];

@@ -1,26 +1,37 @@
+
 import 'package:flutter/material.dart';
 import '../core/glass_background.dart';
 import '../core/glass_card.dart';
 import '../storage/local_storage.dart';
 
 class ChatScreen extends StatefulWidget {
-  ChatScreen({super.key});
+  const ChatScreen({super.key});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  final controller = TextEditingController();
-  final messages = <String>[];
+  final TextEditingController _controller = TextEditingController();
+  List<Map<String, dynamic>> _messages = [];
 
-  void send() async {
-    if (controller.text.isEmpty) return;
-    await LocalStorage.saveMeal(controller.text);
-    setState(() {
-      messages.add(controller.text);
-      controller.clear();
-    });
+  @override
+  void initState() {
+    super.initState();
+    _loadMessages();
+  }
+
+  Future<void> _loadMessages() async {
+    final parsed = await LocalStorage.getParsedMeals();
+    setState(() => _messages = parsed);
+  }
+
+  Future<void> _send() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+    await LocalStorage.saveMeal(text);
+    _controller.clear();
+    await _loadMessages();
   }
 
   @override
@@ -32,18 +43,41 @@ class _ChatScreenState extends State<ChatScreen> {
             children: [
               const Padding(
                 padding: EdgeInsets.all(16),
-                child: Text('Food Chat', style: TextStyle(fontSize: 22)),
+                child: Text('Chat', style: TextStyle(fontSize: 22)),
               ),
               Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: messages
-                      .map((m) => Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: GlassCard(child: Text(m)),
-                          ))
-                      .toList(),
-                ),
+                child: _messages.isEmpty
+                    ? const Center(child: Text('No messages yet'))
+                    : ListView.builder(
+                        reverse: true,
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _messages.length,
+                        itemBuilder: (context, index) {
+                          final msg = _messages[_messages.length - 1 - index];
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: GlassCard(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(12),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(msg['text'] ?? ''),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        msg['time'] ?? '',
+                                        style: const TextStyle(fontSize: 11, color: Colors.white60),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
               ),
               Padding(
                 padding: const EdgeInsets.all(12),
@@ -51,16 +85,21 @@ class _ChatScreenState extends State<ChatScreen> {
                   children: [
                     Expanded(
                       child: TextField(
-                        controller: controller,
-                        decoration: const InputDecoration(
-                          hintText: 'What did you eat?',
+                        controller: _controller,
+                        decoration: InputDecoration(
+                          hintText: 'I ate 2 eggs and banana',
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.03),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.send),
-                      onPressed: send,
-                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: _send,
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF8B5CF6)),
+                      child: const Icon(Icons.send),
+                    )
                   ],
                 ),
               )

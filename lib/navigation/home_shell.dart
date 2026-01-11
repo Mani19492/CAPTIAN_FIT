@@ -13,7 +13,7 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int index = 0;
 
-  final pages = [
+  final pages = const [
     DashboardScreen(),
     ChatScreen(),
     WorkoutScreen(),
