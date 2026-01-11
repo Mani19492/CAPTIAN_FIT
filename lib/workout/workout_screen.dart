@@ -17,6 +17,24 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     'Plank 60s',
     'Running 10 min',
   ];
+  List<String> _loggedWorkouts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWorkouts();
+  }
+
+  Future<void> _loadWorkouts() async {
+    final saved = await LocalStorage.getWorkouts();
+    setState(() => _loggedWorkouts = saved);
+  }
+
+  Future<void> _addWorkout(String workout) async {
+    await LocalStorage.saveWorkout(workout);
+    await _loadWorkouts();
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Workout logged')));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,25 +43,57 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         child: SafeArea(
           child: ListView(
             padding: const EdgeInsets.all(16),
-            children: workouts
-                .map(
-                  (w) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: GlassCard(
-                      child: ListTile(
-                        title: Text(w),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.add),
-                          onPressed: () async {
-                            await LocalStorage.saveWorkout(w);
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved')));
-                          },
+            children: [
+              const Text('Available Workouts', style: TextStyle(fontSize: 18, color: Color(0xFFFFFFFF), fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              ...workouts
+                  .map(
+                    (w) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: GlassCard(
+                        child: ListTile(
+                          title: Text(w),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.add),
+                            onPressed: () => _addWorkout(w),
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                  )
+                  .toList(),
+              const SizedBox(height: 24),
+              const Text("Today's Workouts", style: TextStyle(fontSize: 18, color: Color(0xFFFFFFFF), fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              if (_loggedWorkouts.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 32),
+                  child: Center(child: Text('No workouts logged yet', style: TextStyle(color: Color(0xFF9CA3AF)))),
                 )
-                .toList(),
+              else
+                ..._loggedWorkouts
+                    .asMap()
+                    .entries
+                    .map(
+                      (entry) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: GlassCard(
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(entry.value, style: const TextStyle(color: Color(0xFFFFFFFF))),
+                                ),
+                                Text('${entry.key + 1}', style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+            ],
           ),
         ),
       ),

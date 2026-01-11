@@ -14,6 +14,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
   List<Map<String, dynamic>> _messages = [];
+  bool _isSending = false;
 
   @override
   void initState() {
@@ -29,9 +30,14 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _send() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
-    await LocalStorage.saveMeal(text);
-    _controller.clear();
-    await _loadMessages();
+    setState(() => _isSending = true);
+    try {
+      await LocalStorage.saveMeal(text);
+      _controller.clear();
+      await _loadMessages();
+    } finally {
+      setState(() => _isSending = false);
+    }
   }
 
   @override
@@ -86,6 +92,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     Expanded(
                       child: TextField(
                         controller: _controller,
+                        enabled: !_isSending,
                         decoration: InputDecoration(
                           hintText: 'I ate 2 eggs and banana',
                           filled: true,
@@ -96,9 +103,15 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                     const SizedBox(width: 8),
                     ElevatedButton(
-                      onPressed: _send,
+                      onPressed: _isSending ? null : _send,
                       style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF8B5CF6)),
-                      child: const Icon(Icons.send),
+                      child: _isSending
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white)),
+                            )
+                          : const Icon(Icons.send),
                     )
                   ],
                 ),

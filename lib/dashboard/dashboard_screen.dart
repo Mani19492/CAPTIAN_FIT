@@ -12,12 +12,20 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int meals = 0;
+  int workouts = 0;
 
   @override
   void initState() {
     super.initState();
-    LocalStorage.getParsedMeals().then((m) {
-      setState(() => meals = m.length);
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    final parsedMeals = await LocalStorage.getParsedMeals();
+    final savedWorkouts = await LocalStorage.getWorkouts();
+    setState(() {
+      meals = parsedMeals.length;
+      workouts = savedWorkouts.length;
     });
   }
 
@@ -85,10 +93,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       child: GlassCard(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text('Workouts this week', style: TextStyle(color: Color(0xFF9CA3AF))),
-                            SizedBox(height: 8),
-                            Text('3', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFFFFFFFF))),
+                          children: [
+                            const Text('Workouts logged', style: TextStyle(color: Color(0xFF9CA3AF))),
+                            const SizedBox(height: 8),
+                            Text('$workouts', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFFFFFFFF))),
                           ],
                         ),
                       ),
