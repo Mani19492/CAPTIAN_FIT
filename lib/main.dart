@@ -1,41 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-import 'auth/login_screen.dart';
-import 'navigation/home_shell.dart';
-import 'core/app_colors.dart';
+import 'package:captain_fit/navigation/app_router.dart';
 
 void main() {
-  runApp(const CaptainFitApp());
+  runApp(const MyApp());
 }
 
-class CaptainFitApp extends StatelessWidget {
-  const CaptainFitApp({super.key});
-
-  Future<bool> _checkLogin() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('isLoggedIn') ?? false;
-  }
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
+      title: 'CaptainFit',
       theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: AppColors.backgroundDark,
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+          brightness: Brightness.dark,
+        ),
       ),
-      home: FutureBuilder<bool>(
-        future: _checkLogin(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
-          return snapshot.data! ? const HomeShell() : const LoginScreen();
-        },
-      ),
+      home: const AppRouter(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
