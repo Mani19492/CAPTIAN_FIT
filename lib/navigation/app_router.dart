@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:captain_fit/screens/home_screen.dart';
+import 'package:captain_fit/screens/futuristic_home_screen.dart';
 import 'package:captain_fit/screens/chat_screen.dart';
 import 'package:captain_fit/screens/workout_screen.dart';
 import 'package:captain_fit/screens/profile_screen.dart';
@@ -15,7 +15,7 @@ class _AppRouterState extends State<AppRouter> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = [
-    const HomeScreen(),
+    const FuturisticHomeScreen(),
     const ChatScreen(),
     const WorkoutScreen(),
     const ProfileScreen(),

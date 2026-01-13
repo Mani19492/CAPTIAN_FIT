@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:captain_fit/navigation/app_router.dart';
+import 'package:captain_fit/theme/futuristic_theme.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,13 +13,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'CaptainFit',
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
-          brightness: Brightness.dark,
-        ),
-      ),
+      theme: FuturisticTheme.darkTheme,
       home: const AppRouter(),
       debugShowCheckedModeBanner: false,
     );
