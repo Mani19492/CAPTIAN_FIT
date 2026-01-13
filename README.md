@@ -1,46 +1,27 @@
 # CaptainFit
 
-CaptainFit is an interactive, animated offline-first mobile fitness & diet assistant built with Flutter.
+CaptainFit is an offline-first mobile fitness & diet assistant (Flutter).
 
-## Features
+## MVP Goals
 
-- **AI-Powered Chat Assistant**: Chat with an intelligent assistant that understands your fitness needs
-- **Food Logging**: Log what you eat through natural conversation
-- **Workout Tracking**: Record your exercises with visual GIFs
-- **Interactive Dashboard**: Beautiful animated UI with real-time stats
-- **Local Storage**: All data stored securely on your device
-- **Exercise GIFs**: Visual demonstrations for every workout
+- Log food in a chat-style UI
+- Log workouts from a selection list
+- Store all data locally (SharedPreferences)
+- Minimal, premium dark glass UI
 
-## Getting Started
+## Getting started
 
-1. Run `flutter pub get`
-2. Run `flutter run`
+- flutter pub get
+- flutter run -d <device>
 
-## How to Use
+## Project structure
 
-### Chat Assistant
-- Ask for food suggestions: "What should I eat for breakfast?"
-- Log foods: "I ate a chicken salad"
-- Get workout recommendations: "Suggest a leg workout"
-- Log exercises: "I did 20 push-ups"
+- `lib/auth` — login screen
+- `lib/navigation` — home shell (bottom navigation)
+- `lib/chat` — chat UI for food logging
+- `lib/workout` — workout logging UI
+- `lib/storage` — local storage helpers
 
-### Workout Tracker
-- Browse suggested exercises with visual GIFs
-- Track completed workouts
-- View daily progress
+## Notes
 
-### Profile
-- See your fitness history
-- Track your activity streak
-- View food and workout history
-
-## Tech Stack
-
-- Flutter (Dart)
-- SharedPreferences for local storage
-- Material Design components
-- Cupertino Icons
-
-## Offline First
-
-All data is stored locally on your device. No internet connection required!
+This is an MVP focused on offline UX and local persistence. Cloud sync and calorie estimation are planned for post-MVP.
