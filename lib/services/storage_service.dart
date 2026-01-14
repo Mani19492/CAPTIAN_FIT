@@ -88,4 +88,11 @@ class StorageService {
   Future<bool> clearAll() async {
     return await _prefs.clear();
   }
+  
+  // Add missing method
+  Future<List<String>> getDailyLogs() async {
+    // This is a placeholder implementation
+    // In a real app, this would retrieve daily logs from storage
+    return [];
+  }
 }
