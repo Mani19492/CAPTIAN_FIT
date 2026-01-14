@@ -16,8 +16,8 @@ class AuthService {
     final supabaseKey = dotenv.env['SUPABASE_KEY'];
     return supabaseUrl != null && 
            supabaseKey != null && 
-           supabaseUrl.isNotEmpty && 
-           supabaseKey.isNotEmpty;
+           supabaseUrl!.isNotEmpty && 
+           supabaseKey!.isNotEmpty;
   }
 
   static Future<void> initSupabase() async {

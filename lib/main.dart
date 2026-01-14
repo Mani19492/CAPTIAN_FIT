@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:captain_fit/services/auth_service.dart';
 import 'package:captain_fit/navigation/app_router.dart';
-import 'package:captain_fit/theme/futuristic_theme.dart';
 import 'package:captain_fit/services/storage_service.dart';
 
 Future<void> main() async {
@@ -29,7 +28,14 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'CaptainFit',
       debugShowCheckedModeBanner: false,
-      theme: FuturisticTheme.theme,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+          brightness: Brightness.dark,
+        ),
+        scaffoldBackgroundColor: const Color(0xFF0A0A0A),
+      ),
       home: const AppRouter(),
     );
   }

@@ -93,6 +93,7 @@ class StorageService {
   Future<List<String>> getDailyLogs() async {
     // This is a placeholder implementation
     // In a real app, this would retrieve daily logs from storage
-    return [];
+    final logs = _prefs.getStringList('daily_logs');
+    return logs ?? [];
   }
 }

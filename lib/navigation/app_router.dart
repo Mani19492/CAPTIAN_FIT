@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:captain_fit/screens/home_screen.dart';
+import 'package:captain_fit/screens/workout_screen.dart';
+import 'package:captain_fit/screens/profile_screen.dart';
+import 'package:captain_fit/screens/chat_screen.dart';
 
 class AppRouter extends StatefulWidget {
   const AppRouter({super.key});
@@ -13,9 +16,9 @@ class _AppRouterState extends State<AppRouter> {
 
   final List<Widget> _screens = [
     const HomeScreen(),
-    const PlaceholderScreen(title: 'Workout'),
-    const PlaceholderScreen(title: 'Profile'),
-    const PlaceholderScreen(title: 'Chat'),
+    const WorkoutScreen(),
+    const ProfileScreen(),
+    const ChatScreen(),
   ];
 
   @override
@@ -46,35 +49,6 @@ class _AppRouterState extends State<AppRouter> {
             icon: Icon(Icons.chat),
             label: 'Chat',
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class PlaceholderScreen extends StatelessWidget {
-  final String title;
-
-  const PlaceholderScreen({super.key, required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.construction,
-            size: 64,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            '$title Screen',
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
-          const SizedBox(height: 8),
-          const Text('This screen is under construction'),
         ],
       ),
     );
