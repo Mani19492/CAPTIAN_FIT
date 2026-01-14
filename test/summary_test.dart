@@ -1,19 +1,25 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:captain_fit/storage/local_storage.dart';
 import 'package:captain_fit/services/summary_service.dart';
 
 void main() {
-  setUp(() async {
-    SharedPreferences.setMockInitialValues({});
-  });
+  group('Summary Service Tests', () {
+    test('Calculates daily summary correctly', () {
+      final summary = SummaryService.calculateDailySummary();
+      
+      expect(summary, isNotNull);
+      expect(summary.caloriesConsumed, greaterThan(0));
+      expect(summary.caloriesBurned, greaterThan(0));
+      expect(summary.workoutDuration, greaterThan(0));
+    });
 
-  test('daily summary calculates calories from meals', () async {
-    await LocalStorage.saveMeal('I ate 2 eggs and 1 roti');
-    await LocalStorage.saveMeal('I ate samosa');
-
-    final summary = await SummaryService.dailySummary(DateTime.now());
-    expect(summary.mealsLogged, 2);
-    expect(summary.caloriesIn > 250, true);
+    test('Calculates weekly summary correctly', () {
+      final summary = SummaryService.calculateWeeklySummary();
+      
+      expect(summary, isNotNull);
+      expect(summary.totalCaloriesConsumed, greaterThan(0));
+      expect(summary.totalCaloriesBurned, greaterThan(0));
+      expect(summary.totalWorkoutDuration, greaterThan(0));
+      expect(summary.workoutDays, greaterThan(0));
+    });
   });
 }

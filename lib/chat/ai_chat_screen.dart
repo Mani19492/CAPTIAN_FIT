@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import '../core/glass_background.dart';
-import '../core/glass_card.dart';
-import '../storage/local_storage.dart';
-import '../services/ai_assistant.dart';
+import 'package:captain_fit/storage/local_storage.dart';
+import 'package:captain_fit/services/ai_assistant.dart';
 
 class AIChatScreen extends StatefulWidget {
   const AIChatScreen({super.key});
@@ -11,319 +9,204 @@ class AIChatScreen extends StatefulWidget {
   State<AIChatScreen> createState() => _AIChatScreenState();
 }
 
-class _AIChatScreenState extends State<AIChatScreen>
-    with TickerProviderStateMixin {
-  final TextEditingController _controller = TextEditingController();
-  List<Map<String, dynamic>> _messages = [];
-  bool _isSending = false;
-  late AnimationController _slideController;
-  late AnimationController _fadeController;
+class _AIChatScreenState extends State<AIChatScreen> {
+  final _textController = TextEditingController();
+  final _scrollController = ScrollController();
+  final _localStorage = LocalStorage();
+  final _aiAssistant = AIAssistantService();
+  
+  List<ChatMessage> _messages = [];
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    // Default durations; they may be overridden in didChangeDependencies
-    _slideController = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
-    _loadMessages();
+    _loadChatHistory();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Use accessibleNavigation as the platform gesture-based preference for reduced motion
-    final reduceMotion = MediaQuery.of(context).accessibleNavigation;
-    if (reduceMotion) {
-      _slideController.duration = const Duration(milliseconds: 0);
-      _fadeController.duration = const Duration(milliseconds: 0);
+  Future<void> _loadChatHistory() async {
+    try {
+      final messages = await _localStorage.getChatMessages();
+      setState(() {
+        _messages = messages;
+      });
+    } catch (e) {
+      // Handle error
     }
   }
 
-  @override
-  void dispose() {
-    _slideController.dispose();
-    _fadeController.dispose();
-    super.dispose();
-  }
+  Future<void> _sendMessage() async {
+    final message = _textController.text.trim();
+    if (message.isEmpty) return;
 
-  Future<void> _loadMessages() async {
-    final messages = await LocalStorage.getChatMessages();
-    setState(() => _messages = messages);
-  }
+    _textController.clear();
 
-  Future<void> _send() async {
-    final text = _controller.text.trim();
-    if (text.isEmpty) return;
-
-    setState(() => _isSending = true);
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
-      await LocalStorage.saveMessage(text, 'user');
-
-      // Advice queries should not create logs; just respond with guidance
-      if (AIAssistant.isAdviceQuery(text)) {
-        final response = AIAssistant.generateAIResponse(text);
-        await Future.delayed(const Duration(milliseconds: 400));
-        await LocalStorage.saveMessage(response, 'assistant');
-        _controller.clear();
-        await _loadMessages();
-        _slideController.forward(from: 0.0);
-        _fadeController.forward(from: 0.0);
-        return;
-      }
-
-      // For confirmation/log intents, prefer the new generic detection
-      if (AIAssistant.isLogIntent(text)) {
-        final detectedFood = AIAssistant.detectFood(text);
-        final detectedExercise = AIAssistant.detectExercise(text);
-
-        if (detectedFood != null) {
-          await LocalStorage.saveMeal(text, detectedFood: detectedFood);
-        } else if (detectedExercise != null) {
-          await LocalStorage.saveWorkout(text, detectedExercise: detectedExercise);
-        } else {
-          // Generic food log when no DB match
-          await LocalStorage.saveMeal(text);
+      final response = await _aiAssistant.processMessage(message);
+      
+      setState(() {
+        _messages = [
+          ..._messages,
+          response.userMessage,
+          response.assistantMessage,
+        ];
+        _isLoading = false;
+      });
+      
+      // Scroll to bottom
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
         }
-
-        final response = AIAssistant.generateAIResponse(text);
-        await Future.delayed(const Duration(milliseconds: 400));
-        await LocalStorage.saveMessage(response, 'assistant');
-
-        _controller.clear();
-        await _loadMessages();
-
-        _slideController.forward(from: 0.0);
-        _fadeController.forward(from: 0.0);
-        return;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to send message')),
+        );
       }
-
-      // Fallback: respond conversationally
-      final response = AIAssistant.generateAIResponse(text);
-      await Future.delayed(const Duration(milliseconds: 400));
-      await LocalStorage.saveMessage(response, 'assistant');
-
-      _controller.clear();
-      await _loadMessages();
-
-      _slideController.forward(from: 0.0);
-      _fadeController.forward(from: 0.0);
-    } finally {
-      setState(() => _isSending = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: GlassBackground(
-        child: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      'Captain Fit AI',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFFFFFFFF),
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Your personal fitness assistant',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF9CA3AF),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: _messages.isEmpty
-                    ? _buildEmptyState()
-                    : ListView.builder(
-                        reverse: true,
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _messages.length,
-                        itemBuilder: (context, index) {
-                          final msg = _messages[_messages.length - 1 - index];
-                          final isUser = msg['sender'] == 'user';
-                          return _buildMessageBubble(msg, isUser);
-                        },
-                      ),
-              ),
-              _buildInputArea(),
-            ],
-          ),
-        ),
+      appBar: AppBar(
+        title: const Text('AI Fitness Assistant'),
+        centerTitle: true,
       ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      body: Column(
         children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withOpacity(0.05),
-            ),
-            child: const Icon(
-              Icons.fitness_center,
-              size: 40,
-              color: Color(0xFF8B5CF6),
-            ),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'Start your fitness journey',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFFFFFFFF),
+          Expanded(
+            child: ListView.builder(
+              controller: _scrollController,
+              itemCount: _messages.length + (_isLoading ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index == _messages.length && _isLoading) {
+                  return const _LoadingIndicator();
+                }
+                
+                final message = _messages[index];
+                return _ChatMessageBubble(message: message);
+              },
             ),
           ),
-          const SizedBox(height: 8),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
-              'Tell me about your meals, workouts, or ask for suggestions',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Color(0xFF9CA3AF),
-              ),
-            ),
+          _MessageInput(
+            controller: _textController,
+            onSend: _sendMessage,
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildMessageBubble(Map<String, dynamic> msg, bool isUser) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Align(
-        alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-        child: SlideTransition(
-          position: Tween<Offset>(
-            begin: isUser ? const Offset(0.5, 0) : const Offset(-0.5, 0),
-            end: Offset.zero,
-          ).animate(_slideController),
-          child: GlassCard(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    msg['text'] ?? '',
-                    style: const TextStyle(
-                      color: Color(0xFFFFFFFF),
-                      fontSize: 14,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _formatTime(msg['time']),
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Colors.white60,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+class _ChatMessageBubble extends StatelessWidget {
+  final ChatMessage message;
+
+  const _ChatMessageBubble({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final isUser = message.isUser;
+    final backgroundColor = isUser 
+        ? Theme.of(context).colorScheme.primary 
+        : Theme.of(context).colorScheme.surface;
+    
+    return Align(
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          message.text,
+          style: TextStyle(
+            color: isUser ? Colors.black : null,
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildInputArea() {
-    final reduceMotion = MediaQuery.of(context).accessibleNavigation;
-    return Padding(
-      padding: const EdgeInsets.all(12),
+class _LoadingIndicator extends StatelessWidget {
+  const _LoadingIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: EdgeInsets.all(8),
+        padding: EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+        ),
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+    );
+  }
+}
+
+class _MessageInput extends StatelessWidget {
+  final TextEditingController controller;
+  final VoidCallback onSend;
+
+  const _MessageInput({
+    required this.controller,
+    required this.onSend,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: const BoxDecoration(
+        border: Border(
+          top: BorderSide(color: Colors.grey, width: 0.5),
+        ),
+      ),
       child: Row(
         children: [
           Expanded(
-            child: Semantics(
-              label: 'Message input',
-              child: TextField(
-                controller: _controller,
-                enabled: !_isSending,
-                maxLines: 1,
-                decoration: InputDecoration(
-                  hintText: 'I just ate 2 eggs and banana...',
-                  hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
-                  filled: true,
-                  fillColor: Colors.white.withOpacity(0.05),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
-                  ),
-                ),
+            child: TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                hintText: 'Ask about fitness, log meals, or track workouts...',
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 16),
               ),
+              onSubmitted: (_) => onSend(),
             ),
           ),
           const SizedBox(width: 8),
-          Semantics(
-            label: 'Send message',
-            button: true,
-            child: ElevatedButton(
-              onPressed: _isSending ? null : _send,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF8B5CF6),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
-              child: _isSending
-                  ? SizedBox(
-                      width: reduceMotion ? 0 : 24,
-                      height: reduceMotion ? 0 : 24,
-                      child: const CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation(Colors.white),
-                      ),
-                    )
-                  : const Icon(Icons.send, size: 20),
-            ),
-          )
+          IconButton(
+            icon: const Icon(Icons.send),
+            onPressed: onSend,
+          ),
         ],
       ),
     );
-  }
-
-  String _formatTime(String? isoTime) {
-    if (isoTime == null || isoTime.isEmpty) return '';
-    try {
-      final time = DateTime.parse(isoTime);
-      return '${time.hour}:${time.minute.toString().padLeft(2, '0')}';
-    } catch (_) {
-      return '';
-    }
   }
 }

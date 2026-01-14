@@ -50,20 +50,37 @@ class SyncService {
   }
 
   // Add item to sync queue
-  Future<void> enqueueForSync(SyncItem item) async {
+  Future<void> enqueue(SyncItem item) async {
     // In a real implementation, this would:
     // 1. Save item to local database with pending sync status
     // 2. Schedule background sync
     
     // For now, we'll just print to console
-    print('Enqueued for sync: ${item.type} - ${item.data}');
+    // print('Enqueued for sync: ${item.type} - ${item.data}');
+  }
+
+  // Get number of queued items
+  Future<int> queuedCount() async {
+    // In a real implementation, this would:
+    // 1. Count items in sync queue
+    
+    // For now, we'll return 0
+    return 0;
+  }
+
+  // Attempt to sync queued items
+  Future<void> attemptSync() async {
+    // In a real implementation, this would:
+    // 1. Try to sync queued items
+    
+    // For now, we'll do nothing
   }
 
   // Start background sync process
   void startBackgroundSync() {
     // This would typically be triggered by system events
     // For now, we'll just print
-    print('Background sync started');
+    // print('Background sync started');
   }
 }
 

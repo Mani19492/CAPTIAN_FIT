@@ -8,14 +8,14 @@ class GlassBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF0A0A0A),
-            const Color(0xFF121212),
-            const Color(0xFF0A0A0A),
+            Color(0xFF0A0A0A),
+            Color(0xFF121212),
+            Color(0xFF0A0A0A),
           ],
         ),
       ),

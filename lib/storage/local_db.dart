@@ -1,6 +1,6 @@
-import 'dart:io';
-import 'package:path/path.dart';
+import 'dart:math';
 import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 
 class LocalDatabase {
@@ -77,9 +77,7 @@ class LocalDatabase {
     ''');
   }
   
-  // Database operations would go here
-  // For brevity, we'll just include a few examples
-  
+  // Database operations
   Future<int> insertMeal(Map<String, dynamic> meal) async {
     final db = await database;
     return await db.insert('meals', meal);
@@ -98,6 +96,16 @@ class LocalDatabase {
   Future<List<Map<String, dynamic>>> getWorkouts() async {
     final db = await database;
     return await db.query('workouts', orderBy: 'timestamp DESC');
+  }
+  
+  Future<int> insertChatMessage(Map<String, dynamic> message) async {
+    final db = await database;
+    return await db.insert('chat_messages', message);
+  }
+  
+  Future<List<Map<String, dynamic>>> getChatMessages() async {
+    final db = await database;
+    return await db.query('chat_messages', orderBy: 'timestamp ASC');
   }
   
   Future<void> close() async {

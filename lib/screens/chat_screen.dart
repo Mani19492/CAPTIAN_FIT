@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:captain_fit/services/ai_assistant.dart';
 import 'package:captain_fit/storage/local_storage.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -12,8 +11,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final _textController = TextEditingController();
   final _scrollController = ScrollController();
-  final _aiAssistant = AIAssistantService();
-  final _storage = LocalStorage();
+  final _localStorage = LocalStorage();
   
   List<ChatMessage> _messages = [];
   bool _isLoading = false;
@@ -25,53 +23,31 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _loadChatHistory() async {
-    final messages = await _storage.getChatMessages();
-    setState(() {
-      _messages = messages;
-    });
-  }
-
-  Future<void> _sendMessage() async {
-    final message = _textController.text.trim();
-    if (message.isEmpty) return;
-
-    _textController.clear();
-
-    setState(() {
-      _isLoading = true;
-    });
-
     try {
-      final response = await _aiAssistant.processMessage(message);
-      
+      final messages = await _localStorage.getChatMessages();
       setState(() {
-        _messages = [
-          ..._messages,
-          response.userMessage,
-          response.assistantMessage,
-        ];
-        _isLoading = false;
-      });
-      
-      // Scroll to bottom
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
+        _messages = messages;
       });
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
+      // Handle error
+    }
+  }
+
+  Future<void> _saveMeal(Meal meal) async {
+    try {
+      final meals = await _localStorage.getMeals();
+      meals.add(meal);
+      await _localStorage.saveMeals(meals);
       
-      // Show error message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to send message')),
+          const SnackBar(content: Text('Meal logged successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to log meal')),
         );
       }
     }
@@ -81,7 +57,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AI Fitness Assistant'),
+        title: const Text('Chat'),
         centerTitle: true,
       ),
       body: Column(
@@ -107,6 +83,85 @@ class _ChatScreenState extends State<ChatScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _sendMessage() async {
+    final message = _textController.text.trim();
+    if (message.isEmpty) return;
+
+    _textController.clear();
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Create user message
+      final userMessage = ChatMessage(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        text: message,
+        isUser: true,
+        timestamp: DateTime.now(),
+      );
+      
+      // Create response message
+      final responseText = _generateResponse(message);
+      final responseMessage = ChatMessage(
+        id: (DateTime.now().millisecondsSinceEpoch + 1).toString(),
+        text: responseText,
+        isUser: false,
+        timestamp: DateTime.now(),
+      );
+      
+      // Save messages
+      final messages = await _localStorage.getChatMessages();
+      messages.addAll([userMessage, responseMessage]);
+      await _localStorage.saveChatMessages(messages);
+      
+      setState(() {
+        _messages = messages;
+        _isLoading = false;
+      });
+      
+      // Scroll to bottom
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to send message')),
+        );
+      }
+    }
+  }
+
+  String _generateResponse(String message) {
+    final lowerMessage = message.toLowerCase();
+    
+    if (lowerMessage.contains('hello') || lowerMessage.contains('hi')) {
+      return 'Hello! How can I help you with your fitness today?';
+    }
+    
+    if (lowerMessage.contains('workout')) {
+      return 'Would you like me to suggest a workout for you?';
+    }
+    
+    if (lowerMessage.contains('meal') || lowerMessage.contains('food')) {
+      return 'Would you like to log a meal or get meal suggestions?';
+    }
+    
+    return 'I\'m here to help with your fitness journey. You can ask about workouts, meals, or general fitness advice.';
   }
 }
 
@@ -190,7 +245,7 @@ class _MessageInput extends StatelessWidget {
             child: TextField(
               controller: controller,
               decoration: const InputDecoration(
-                hintText: 'Ask about fitness, log meals, or track workouts...',
+                hintText: 'Type a message...',
                 border: OutlineInputBorder(),
                 contentPadding: EdgeInsets.symmetric(horizontal: 16),
               ),

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import '../core/glass_background.dart';
-import '../core/glass_card.dart';
-import '../storage/local_storage.dart';
+import 'package:captain_fit/storage/local_storage.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -11,180 +9,252 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  int meals = 0;
-  int workouts = 0;
+  final _localStorage = LocalStorage();
+  List<Meal> _meals = [];
+  List<Workout> _workouts = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadStats();
+    _loadData();
   }
 
-  Future<void> _loadStats() async {
-    final parsedMeals = await LocalStorage.getParsedMeals();
-    final savedWorkouts = await LocalStorage.getWorkouts();
-    setState(() {
-      meals = parsedMeals.length;
-      workouts = savedWorkouts.length;
-    });
+  Future<void> _loadData() async {
+    try {
+      final meals = await _localStorage.getMeals();
+      final workouts = await _localStorage.getWorkouts();
+      
+      setState(() {
+        _meals = meals;
+        _workouts = workouts;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: GlassBackground(
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      appBar: AppBar(
+        title: const Text('Dashboard'),
+        centerTitle: true,
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildWelcomeCard(),
+                  const SizedBox(height: 20),
+                  _buildStatsOverview(),
+                  const SizedBox(height: 20),
+                  _buildQuickActions(),
+                ],
+              ),
+            ),
+    );
+  }
+
+  Widget _buildWelcomeCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Welcome back!',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Ready for your daily fitness routine?',
+            ),
+            const SizedBox(height: 16),
+            Row(
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            'CaptainFit',
-                            style: TextStyle(
-                              fontSize: 36,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFFFFFFFF),
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'Your fitness journey starts here',
-                            style: TextStyle(fontSize: 16, color: Color(0xFF9CA3AF)),
-                          ),
-                        ],
-                      ),
-                    ),
-                    GlassCard(
-                      child: SizedBox(
-                        width: 56,
-                        height: 56,
-                        child: Icon(Icons.person, color: Colors.white),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
-                // Stats row
-                Row(
-                  children: [
-                    Expanded(
-                      child: GlassCard(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Meals logged today', style: TextStyle(color: Color(0xFF9CA3AF))),
-                            const SizedBox(height: 8),
-                            Text('$meals', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFFFFFFFF))),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: GlassCard(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Workouts logged', style: TextStyle(color: Color(0xFF9CA3AF))),
-                            const SizedBox(height: 8),
-                            Text('$workouts', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFFFFFFFF))),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-
-                // Feature cards carousel
-                const Text('Features', style: TextStyle(fontSize: 18, color: Color(0xFFFFFFFF), fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                SizedBox(
-                  height: 140,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: [
-                      const SizedBox(width: 4),
-                      SizedBox(
-                        width: 260,
-                        child: GlassCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Icon(Icons.restaurant_menu, color: Color(0xFF8B5CF6), size: 36),
-                              SizedBox(height: 8),
-                              Text('Meal Tracking', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFFFFFFF))),
-                              SizedBox(height: 6),
-                              Text('Log meals and track calories with ease.', style: TextStyle(color: Color(0xFF9CA3AF))),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      SizedBox(
-                        width: 260,
-                        child: GlassCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Icon(Icons.fitness_center, color: Color(0xFF8B5CF6), size: 36),
-                              SizedBox(height: 8),
-                              Text('Workouts', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFFFFFFF))),
-                              SizedBox(height: 6),
-                              Text('Discover guided workouts for all levels.', style: TextStyle(color: Color(0xFF9CA3AF))),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      SizedBox(
-                        width: 260,
-                        child: GlassCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Icon(Icons.chat_bubble_outline, color: Color(0xFF8B5CF6), size: 36),
-                              SizedBox(height: 8),
-                              Text('Community', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFFFFFFF))),
-                              SizedBox(height: 6),
-                              Text('Join conversations, ask questions, and get support.', style: TextStyle(color: Color(0xFF9CA3AF))),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // CTA
-                Center(
+                Expanded(
                   child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF8B5CF6),
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onPressed: () {},
-                    child: const Text('Get Started', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    onPressed: () {
+                      // Start workout
+                    },
+                    child: const Text('Start Workout'),
                   ),
                 ),
-
-                const SizedBox(height: 40),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      // Log food
+                    },
+                    child: const Text('Log Food'),
+                  ),
+                ),
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatsOverview() {
+    final totalCalories = _meals.fold(0, (sum, meal) => sum + meal.calories);
+    final totalWorkoutTime = _workouts.fold(0, (sum, workout) => sum + workout.duration);
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Today\'s Stats',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _StatCard(
+                title: 'Calories',
+                value: totalCalories.toString(),
+                unit: 'kcal',
+                icon: Icons.local_fire_department,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _StatCard(
+                title: 'Workout Time',
+                value: totalWorkoutTime.toString(),
+                unit: 'min',
+                icon: Icons.access_time,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickActions() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Quick Actions',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        GridView.count(
+          crossAxisCount: 2,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          children: const [
+            _QuickActionCard(
+              title: 'Workout Plan',
+              icon: Icons.fitness_center,
+            ),
+            _QuickActionCard(
+              title: 'Meal Log',
+              icon: Icons.restaurant,
+            ),
+            _QuickActionCard(
+              title: 'Progress',
+              icon: Icons.show_chart,
+            ),
+            _QuickActionCard(
+              title: 'Settings',
+              icon: Icons.settings,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final String unit;
+  final IconData icon;
+
+  const _StatCard({
+    required this.title,
+    required this.value,
+    required this.unit,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              unit,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickActionCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+
+  const _QuickActionCard({
+    required this.title,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: InkWell(
+        onTap: () {
+          // Handle action
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 32),
+              const SizedBox(height: 8),
+              Text(title),
+            ],
           ),
         ),
       ),

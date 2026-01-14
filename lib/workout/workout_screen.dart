@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import '../core/glass_background.dart';
-import '../core/glass_card.dart';
-import '../storage/local_storage.dart';
+import 'package:captain_fit/storage/local_storage.dart';
 
 class WorkoutScreen extends StatefulWidget {
   const WorkoutScreen({super.key});
@@ -11,13 +9,9 @@ class WorkoutScreen extends StatefulWidget {
 }
 
 class _WorkoutScreenState extends State<WorkoutScreen> {
-  final workouts = [
-    'Push Ups 10x3',
-    'Squats 15x3',
-    'Plank 60s',
-    'Running 10 min',
-  ];
-  List<String> _loggedWorkouts = [];
+  final _localStorage = LocalStorage();
+  List<Workout> _workouts = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -26,77 +20,167 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   }
 
   Future<void> _loadWorkouts() async {
-    final saved = await LocalStorage.getWorkouts();
-    setState(() => _loggedWorkouts = saved);
+    try {
+      final workouts = await _localStorage.getWorkouts();
+      
+      setState(() {
+        _workouts = workouts;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
-  Future<void> _addWorkout(String workout) async {
-    await LocalStorage.saveWorkout(workout);
-    await _loadWorkouts();
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Workout logged')));
+  Future<void> _saveWorkout(Workout workout) async {
+    try {
+      final workouts = await _localStorage.getWorkouts();
+      workouts.add(workout);
+      await _localStorage.saveWorkouts(workouts);
+      
+      setState(() {
+        _workouts = workouts;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Workout saved successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to save workout')),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: GlassBackground(
-        child: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              const Text('Available Workouts', style: TextStyle(fontSize: 18, color: Color(0xFFFFFFFF), fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
-              ...workouts
-                  .map(
-                    (w) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: GlassCard(
-                        child: ListTile(
-                          title: Text(w),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.add),
-                            onPressed: () => _addWorkout(w),
-                          ),
-                        ),
-                      ),
-                    ),
-                  )
-                  ,
-              const SizedBox(height: 24),
-              const Text("Today's Workouts", style: TextStyle(fontSize: 18, color: Color(0xFFFFFFFF), fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
-              if (_loggedWorkouts.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 32),
-                  child: Center(child: Text('No workouts logged yet', style: TextStyle(color: Color(0xFF9CA3AF)))),
-                )
-              else
-                ..._loggedWorkouts
-                    .asMap()
-                    .entries
-                    .map(
-                      (entry) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: GlassCard(
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(entry.value, style: const TextStyle(color: Color(0xFFFFFFFF))),
-                                ),
-                                Text('${entry.key + 1}', style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 12)),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    )
-                    ,
-            ],
+      appBar: AppBar(
+        title: const Text('Workouts'),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () {
+              // Add new workout
+            },
           ),
+        ],
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildTodayWorkout(),
+                  const SizedBox(height: 24),
+                  _buildWorkoutHistory(),
+                ],
+              ),
+            ),
+    );
+  }
+
+  Widget _buildTodayWorkout() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Today\'s Workout',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        const Card(
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'No workout scheduled',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 8),
+                Text('Plan your workout for today'),
+                SizedBox(height: 16),
+                LinearProgressIndicator(value: 0.0),
+                SizedBox(height: 8),
+                Text('0/0 exercises completed'),
+                SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: null,
+                    child: Text('Start Workout'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWorkoutHistory() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Workout History',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        if (_workouts.isEmpty)
+          const Center(
+            child: Text('No workouts logged yet'),
+          )
+        else
+          ..._workouts.map((workout) => _WorkoutHistoryItem(workout: workout)),
+      ],
+    );
+  }
+}
+
+class _WorkoutHistoryItem extends StatelessWidget {
+  final Workout workout;
+
+  const _WorkoutHistoryItem({required this.workout});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: ListTile(
+        title: Text(workout.name),
+        subtitle: Text(
+          '${workout.duration} minutes • ${workout.calories} calories',
+        ),
+        trailing: Text(
+          _formatTime(workout.timestamp),
+          style: const TextStyle(color: Colors.grey),
         ),
       ),
     );
+  }
+
+  String _formatTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+    
+    if (difference.inHours < 1) {
+      return '${difference.inMinutes} min ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours} hr ago';
+    } else {
+      return '${difference.inDays} days ago';
+    }
   }
 }

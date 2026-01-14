@@ -16,13 +16,12 @@ class AuthService {
     final supabaseKey = dotenv.env['SUPABASE_KEY'];
     return supabaseUrl != null && 
            supabaseKey != null && 
-           supabaseUrl!.isNotEmpty && 
-           supabaseKey!.isNotEmpty;
+           supabaseUrl.isNotEmpty && 
+           supabaseKey.isNotEmpty;
   }
 
   static Future<void> initSupabase() async {
     if (!isSupabaseConfigured) {
-      print('Supabase not configured. Skipping initialization.');
       return;
     }
 
@@ -36,9 +35,8 @@ class AuthService {
       );
       
       _supabaseClient = Supabase.instance.client;
-      print('Supabase initialized successfully');
     } catch (e) {
-      print('Error initializing Supabase: $e');
+      // Handle error silently
     }
   }
 
@@ -53,7 +51,6 @@ class AuthService {
       );
       return response.user != null;
     } catch (e) {
-      print('Sign in error: $e');
       return false;
     }
   }
@@ -68,7 +65,6 @@ class AuthService {
       );
       return response.user != null;
     } catch (e) {
-      print('Sign up error: $e');
       return false;
     }
   }
@@ -79,7 +75,7 @@ class AuthService {
     try {
       await supabase.auth.signOut();
     } catch (e) {
-      print('Sign out error: $e');
+      // Handle error silently
     }
   }
 
@@ -89,7 +85,6 @@ class AuthService {
     try {
       return supabase.auth.currentUser?.id;
     } catch (e) {
-      print('Error getting current user ID: $e');
       return null;
     }
   }

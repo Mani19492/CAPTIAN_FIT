@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import '../core/glass_background.dart';
-import '../core/glass_card.dart';
-import '../storage/local_storage.dart';
+import 'package:captain_fit/storage/local_storage.dart';
+import 'package:captain_fit/services/summary_service.dart';
 
 class AIDashboardScreen extends StatefulWidget {
   const AIDashboardScreen({super.key});
@@ -10,284 +9,136 @@ class AIDashboardScreen extends StatefulWidget {
   State<AIDashboardScreen> createState() => _AIDashboardScreenState();
 }
 
-class _AIDashboardScreenState extends State<AIDashboardScreen>
-    with TickerProviderStateMixin {
-  int meals = 0;
-  int workouts = 0;
-  late AnimationController _countController;
-  late AnimationController _fadeController;
-  late AnimationController _slideController;
+class _AIDashboardScreenState extends State<AIDashboardScreen> {
+  final _localStorage = LocalStorage();
+  List<Meal> _meals = [];
+  List<Workout> _workouts = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _countController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
-      vsync: this,
-    );
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-    _slideController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
-      vsync: this,
-    );
-    _loadStats();
+    _loadData();
   }
 
-  @override
-  void dispose() {
-    _countController.dispose();
-    _fadeController.dispose();
-    _slideController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadStats() async {
-    final parsedMeals = await LocalStorage.getParsedMeals();
-    final savedWorkouts = await LocalStorage.getWorkouts();
-
-    _countController.forward();
-    _fadeController.forward();
-    _slideController.forward();
-
-    setState(() {
-      meals = parsedMeals.length;
-      workouts = savedWorkouts.length;
-    });
+  Future<void> _loadData() async {
+    try {
+      final meals = await _localStorage.getMeals();
+      final workouts = await _localStorage.getWorkouts();
+      
+      setState(() {
+        _meals = meals;
+        _workouts = workouts;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: GlassBackground(
-        child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 24),
-                _buildStatsCards(),
-                const SizedBox(height: 24),
-                _buildProgressSection(),
-                const SizedBox(height: 24),
-                _buildQuickActions(),
-                const SizedBox(height: 32),
-              ],
-            ),
-          ),
-        ),
+      appBar: AppBar(
+        title: const Text('AI Dashboard'),
+        centerTitle: true,
       ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildWelcomeCard(),
+                  const SizedBox(height: 20),
+                  _buildStatsOverview(),
+                  const SizedBox(height: 20),
+                  _buildQuickActions(),
+                ],
+              ),
+            ),
     );
   }
 
-  Widget _buildHeader() {
-    return FadeTransition(
-      opacity: _fadeController,
-      child: SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(0, -0.5),
-          end: Offset.zero,
-        ).animate(_slideController),
+  Widget _buildWelcomeCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'CaptainFit',
-              style: TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFFFFFFFF),
-              ),
+              'Welcome back!',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Text(
-              'Your fitness journey starts here',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.white.withOpacity(0.7),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatsCards() {
-    return FadeTransition(
-      opacity: Tween<double>(begin: 0, end: 1).animate(
-        CurvedAnimation(parent: _fadeController, curve: const Interval(0.3, 1)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildStatCard(
-              title: 'Meals Logged',
-              value: meals.toString(),
-              emoji: '🍽️',
-              color: const Color(0xFF8B5CF6),
-              delay: 0,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _buildStatCard(
-              title: 'Workouts Done',
-              value: workouts.toString(),
-              emoji: '💪',
-              color: const Color(0xFF10B981),
-              delay: 100,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard({
-    required String title,
-    required String value,
-    required String emoji,
-    required Color color,
-    required int delay,
-  }) {
-    return ScaleTransition(
-      scale: Tween<double>(begin: 0.5, end: 1).animate(
-        CurvedAnimation(
-          parent: _countController,
-          curve: Interval(delay / 1000, (delay + 600) / 1000),
-        ),
-      ),
-      child: GlassCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(emoji, style: const TextStyle(fontSize: 24)),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF9CA3AF),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProgressSection() {
-    final totalActivities = meals + workouts;
-    final progress = totalActivities == 0 ? 0.0 : (meals / (meals + workouts));
-
-    return FadeTransition(
-      opacity: Tween<double>(begin: 0, end: 1).animate(
-        CurvedAnimation(parent: _fadeController, curve: const Interval(0.5, 1)),
-      ),
-      child: GlassCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
             const Text(
-              'Today\'s Balance',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFFFFFFFF),
-              ),
+              'Ready for your daily fitness routine?',
             ),
             const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Nutrition',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF9CA3AF),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '$meals meals',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF8B5CF6),
-                        ),
-                      ),
-                    ],
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // Start workout
+                    },
+                    child: const Text('Start Workout'),
                   ),
                 ),
-                Container(
-                  width: 2,
-                  height: 30,
-                  color: Colors.white.withOpacity(0.1),
-                ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 10),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Training',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF9CA3AF),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '$workouts workouts',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF10B981),
-                        ),
-                      ),
-                    ],
+                  child: OutlinedButton(
+                    onPressed: () {
+                      // Log food
+                    },
+                    child: const Text('Log Food'),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: totalActivities == 0 ? 0 : progress,
-                minHeight: 4,
-                backgroundColor: Colors.white.withOpacity(0.1),
-                valueColor: AlwaysStoppedAnimation(
-                  progress < 0.5 ? const Color(0xFF8B5CF6) : const Color(0xFF10B981),
-                ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatsOverview() {
+    final dailySummary = SummaryService.calculateDailySummary();
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Today\'s Stats',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _StatCard(
+                title: 'Calories',
+                value: dailySummary.caloriesConsumed.toString(),
+                unit: 'kcal',
+                icon: Icons.local_fire_department,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _StatCard(
+                title: 'Steps',
+                value: '8,432',
+                unit: 'steps',
+                icon: Icons.directions_walk,
               ),
             ),
           ],
         ),
-      ),
+      ],
     );
   }
 
@@ -297,63 +148,114 @@ class _AIDashboardScreenState extends State<AIDashboardScreen>
       children: [
         const Text(
           'Quick Actions',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFFFFFFFF),
-          ),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildActionButton(
-                icon: Icons.chat_bubble_outline,
-                label: 'Chat with AI',
-                onTap: () {},
-              ),
+        GridView.count(
+          crossAxisCount: 2,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          children: const [
+            _QuickActionCard(
+              title: 'Workout Plan',
+              icon: Icons.fitness_center,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildActionButton(
-                icon: Icons.fitness_center,
-                label: 'Log Workout',
-                onTap: () {},
-              ),
+            _QuickActionCard(
+              title: 'Meal Log',
+              icon: Icons.restaurant,
+            ),
+            _QuickActionCard(
+              title: 'Progress',
+              icon: Icons.show_chart,
+            ),
+            _QuickActionCard(
+              title: 'AI Assistant',
+              icon: Icons.smart_toy,
             ),
           ],
         ),
       ],
     );
   }
+}
 
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: GlassCard(
+class _StatCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final String unit;
+  final IconData icon;
+
+  const _StatCard({
+    required this.title,
+    required this.value,
+    required this.unit,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              icon,
-              color: const Color(0xFF8B5CF6),
-              size: 28,
-            ),
+            Icon(icon),
             const SizedBox(height: 8),
             Text(
-              label,
-              textAlign: TextAlign.center,
+              title,
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
               style: const TextStyle(
-                fontSize: 12,
-                color: Color(0xFFFFFFFF),
-                fontWeight: FontWeight.w500,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              unit,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickActionCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+
+  const _QuickActionCard({
+    required this.title,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: InkWell(
+        onTap: () {
+          // Handle action
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 32),
+              const SizedBox(height: 8),
+              Text(title),
+            ],
+          ),
         ),
       ),
     );
