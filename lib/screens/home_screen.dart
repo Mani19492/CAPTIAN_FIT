@@ -1,49 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:captain_fit/models/fitness_data.dart';
-import 'package:captain_fit/services/storage_service.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  final StorageService _storageService = StorageService();
-  List<DailyLog> _dailyLogs = [];
-  int _totalCalories = 0;
-  int _totalWorkouts = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    final logs = await _storageService.getDailyLogs();
-    setState(() {
-      _dailyLogs = logs;
-      
-      // Calculate today's stats
-      final today = DateTime.now();
-      final todayLog = logs.firstWhere(
-        (log) => 
-          log.date.year == today.year &&
-          log.date.month == today.month &&
-          log.date.day == today.day,
-        orElse: () => DailyLog(date: today, foods: [], workouts: []),
-      );
-      
-      _totalCalories = todayLog.foods.fold(
-        0, 
-        (sum, food) => sum + food.calories,
-      );
-      
-      _totalWorkouts = todayLog.workouts.length;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,282 +11,228 @@ class _HomeScreenState extends State<HomeScreen> {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadData,
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              // Navigate to settings
+            },
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _loadData,
-        child: SingleChildScrollView(
+      body: const SingleChildScrollView(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            WelcomeCard(),
+            SizedBox(height: 20),
+            StatsOverview(),
+            SizedBox(height: 20),
+            QuickActions(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class WelcomeCard extends StatelessWidget {
+  const WelcomeCard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Welcome back!',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Ready for your daily fitness routine?',
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // Start workout
+                    },
+                    child: const Text('Start Workout'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      // Log food
+                    },
+                    child: const Text('Log Food'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class StatsOverview extends StatelessWidget {
+  const StatsOverview({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Today\'s Stats',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        const SizedBox(height: 12),
+        const Row(
+          children: [
+            StatCard(
+              title: 'Calories',
+              value: '1,250',
+              unit: 'kcal',
+              icon: Icons.local_fire_department,
+            ),
+            SizedBox(width: 12),
+            StatCard(
+              title: 'Steps',
+              value: '8,432',
+              unit: 'steps',
+              icon: Icons.directions_walk,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class StatCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final String unit;
+  final IconData icon;
+
+  const StatCard({
+    super.key,
+    required this.title,
+    required this.value,
+    required this.unit,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Card(
+        child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Stats cards
-              Row(
-                children: [
-                  _buildStatCard(
-                    icon: Icons.restaurant,
-                    title: 'Calories',
-                    value: _totalCalories.toString(),
-                    subtitle: 'Today',
-                    color: Colors.orange,
-                  ),
-                  const SizedBox(width: 16),
-                  _buildStatCard(
-                    icon: Icons.fitness_center,
-                    title: 'Workouts',
-                    value: _totalWorkouts.toString(),
-                    subtitle: 'Today',
-                    color: Colors.blue,
-                  ),
-                ],
+              Icon(icon),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleMedium,
               ),
-              const SizedBox(height: 24),
-              
-              // Recent foods
-              _buildSectionTitle('Recent Foods'),
-              _buildRecentFoods(),
-              const SizedBox(height: 24),
-              
-              // Recent workouts
-              _buildSectionTitle('Recent Workouts'),
-              _buildRecentWorkouts(),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              Text(
+                unit,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
             ],
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildStatCard({
-    required IconData icon,
-    required String title,
-    required String value,
-    required String subtitle,
-    required Color color,
-  }) {
-    return Expanded(
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+class QuickActions extends StatelessWidget {
+  const QuickActions({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Quick Actions',
+          style: Theme.of(context).textTheme.titleLarge,
         ),
-        child: Container(
-          height: 120,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-              colors: [
-                color.withOpacity(0.3),
-                color.withOpacity(0.1),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+        const SizedBox(height: 12),
+        GridView.count(
+          crossAxisCount: 2,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          children: const [
+            QuickActionCard(
+              title: 'Workout Plan',
+              icon: Icons.fitness_center,
             ),
-          ),
+            QuickActionCard(
+              title: 'Meal Log',
+              icon: Icons.restaurant,
+            ),
+            QuickActionCard(
+              title: 'Progress',
+              icon: Icons.show_chart,
+            ),
+            QuickActionCard(
+              title: 'AI Assistant',
+              icon: Icons.smart_toy,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class QuickActionCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+
+  const QuickActionCard({
+    super.key,
+    required this.title,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: InkWell(
+        onTap: () {
+          // Handle action
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 32, color: color),
+              Icon(icon, size: 32),
               const SizedBox(height: 8),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
-                ),
-              ),
+              Text(title),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRecentFoods() {
-    if (_dailyLogs.isEmpty) {
-      return _buildEmptyState('No foods logged yet');
-    }
-    
-    final today = DateTime.now();
-    final todayLog = _dailyLogs.firstWhere(
-      (log) => 
-        log.date.year == today.year &&
-        log.date.month == today.month &&
-        log.date.day == today.day,
-      orElse: () => DailyLog(date: today, foods: [], workouts: []),
-    );
-    
-    if (todayLog.foods.isEmpty) {
-      return _buildEmptyState('No foods logged today');
-    }
-    
-    return SizedBox(
-      height: 120,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: todayLog.foods.length,
-        itemBuilder: (context, index) {
-          final food = todayLog.foods[index];
-          return _buildFoodItem(food);
-        },
-      ),
-    );
-  }
-
-  Widget _buildRecentWorkouts() {
-    if (_dailyLogs.isEmpty) {
-      return _buildEmptyState('No workouts logged yet');
-    }
-    
-    final today = DateTime.now();
-    final todayLog = _dailyLogs.firstWhere(
-      (log) => 
-        log.date.year == today.year &&
-        log.date.month == today.month &&
-        log.date.day == today.day,
-      orElse: () => DailyLog(date: today, foods: [], workouts: []),
-    );
-    
-    if (todayLog.workouts.isEmpty) {
-      return _buildEmptyState('No workouts logged today');
-    }
-    
-    return SizedBox(
-      height: 120,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: todayLog.workouts.length,
-        itemBuilder: (context, index) {
-          final workout = todayLog.workouts[index];
-          return _buildWorkoutItem(workout);
-        },
-      ),
-    );
-  }
-
-  Widget _buildFoodItem(FoodItem food) {
-    return Container(
-      width: 100,
-      margin: const EdgeInsets.only(right: 12),
-      decoration: BoxDecoration(
-        color: Colors.grey[800],
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: Colors.grey[700],
-              borderRadius: BorderRadius.circular(25),
-            ),
-            child: const Icon(Icons.fastfood, color: Colors.orange),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            food.name,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Text(
-            '${food.calories} cal',
-            style: const TextStyle(
-              fontSize: 10,
-              color: Colors.grey,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWorkoutItem(Workout workout) {
-    return Container(
-      width: 100,
-      margin: const EdgeInsets.only(right: 12),
-      decoration: BoxDecoration(
-        color: Colors.grey[800],
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: Colors.grey[700],
-              borderRadius: BorderRadius.circular(25),
-            ),
-            child: const Icon(Icons.fitness_center, color: Colors.blue),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            workout.name,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Text(
-            '${workout.duration} min',
-            style: const TextStyle(
-              fontSize: 10,
-              color: Colors.grey,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(String text) {
-    return Container(
-      height: 120,
-      decoration: BoxDecoration(
-        color: Colors.grey[800],
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Center(
-        child: Text(
-          text,
-          style: const TextStyle(
-            color: Colors.grey,
-            fontSize: 16,
           ),
         ),
       ),

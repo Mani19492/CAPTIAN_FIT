@@ -1,103 +1,91 @@
-import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:captain_fit/models/fitness_data.dart';
 
 class StorageService {
-  static const String _dailyLogsKey = 'daily_logs';
-  static const String _foodHistoryKey = 'food_history';
-  static const String _workoutHistoryKey = 'workout_history';
+  static const String _keyMeals = 'meals';
+  static const String _keyWorkouts = 'workouts';
+  static const String _keyChatMessages = 'chat_messages';
+  static const String _keyUserPreferences = 'user_preferences';
 
-  Future<void> saveDailyLog(DailyLog log) async {
-    final prefs = await SharedPreferences.getInstance();
-    final logs = await getDailyLogs();
-    
-    // Remove existing log for the same date if exists
-    logs.removeWhere((element) => 
-      element.date.year == log.date.year &&
-      element.date.month == log.date.month &&
-      element.date.day == log.date.day
-    );
-    
-    logs.add(log);
-    
-    final jsonString = jsonEncode(
-      logs.map((log) => log.toJson()).toList()
-    );
-    
-    await prefs.setString(_dailyLogsKey, jsonString);
+  late SharedPreferences _prefs;
+
+  static final StorageService _instance = StorageService._internal();
+
+  factory StorageService() => _instance;
+
+  StorageService._internal();
+
+  Future<void> init() async {
+    _prefs = await SharedPreferences.getInstance();
   }
 
-  Future<List<DailyLog>> getDailyLogs() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString(_dailyLogsKey);
-    
-    if (jsonString == null) return [];
-    
-    final List<dynamic> jsonList = jsonDecode(jsonString);
-    return jsonList.map((json) => DailyLog.fromJson(json)).toList();
+  // Generic methods for storing and retrieving data
+  Future<bool> saveString(String key, String value) async {
+    return await _prefs.setString(key, value);
   }
 
-  Future<void> saveFoodToHistory(FoodItem food) async {
-    final prefs = await SharedPreferences.getInstance();
-    final history = await getFoodHistory();
-    
-    // Remove if already exists
-    history.removeWhere((element) => element.name == food.name);
-    
-    // Add to beginning of list
-    history.insert(0, food);
-    
-    // Keep only last 20 items
-    if (history.length > 20) {
-      history.removeRange(20, history.length);
-    }
-    
-    final jsonString = jsonEncode(
-      history.map((food) => food.toJson()).toList()
-    );
-    
-    await prefs.setString(_foodHistoryKey, jsonString);
+  String? getString(String key) {
+    return _prefs.getString(key);
   }
 
-  Future<List<FoodItem>> getFoodHistory() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString(_foodHistoryKey);
-    
-    if (jsonString == null) return [];
-    
-    final List<dynamic> jsonList = jsonDecode(jsonString);
-    return jsonList.map((json) => FoodItem.fromJson(json)).toList();
+  Future<bool> saveInt(String key, int value) async {
+    return await _prefs.setInt(key, value);
   }
 
-  Future<void> saveWorkoutToHistory(Workout workout) async {
-    final prefs = await SharedPreferences.getInstance();
-    final history = await getWorkoutHistory();
-    
-    // Remove if already exists
-    history.removeWhere((element) => element.name == workout.name);
-    
-    // Add to beginning of list
-    history.insert(0, workout);
-    
-    // Keep only last 20 items
-    if (history.length > 20) {
-      history.removeRange(20, history.length);
-    }
-    
-    final jsonString = jsonEncode(
-      history.map((workout) => workout.toJson()).toList()
-    );
-    
-    await prefs.setString(_workoutHistoryKey, jsonString);
+  int? getInt(String key) {
+    return _prefs.getInt(key);
   }
 
-  Future<List<Workout>> getWorkoutHistory() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString(_workoutHistoryKey);
-    
-    if (jsonString == null) return [];
-    
-    final List<dynamic> jsonList = jsonDecode(jsonString);
-    return jsonList.map((json) => Workout.fromJson(json)).toList();
+  Future<bool> saveBool(String key, bool value) async {
+    return await _prefs.setBool(key, value);
+  }
+
+  bool? getBool(String key) {
+    return _prefs.getBool(key);
+  }
+
+  Future<bool> saveStringList(String key, List<String> value) async {
+    return await _prefs.setStringList(key, value);
+  }
+
+  List<String>? getStringList(String key) {
+    return _prefs.getStringList(key);
+  }
+
+  // Specific methods for app data
+  Future<bool> saveMeals(String mealsJson) async {
+    return await saveString(_keyMeals, mealsJson);
+  }
+
+  String? getMeals() {
+    return getString(_keyMeals);
+  }
+
+  Future<bool> saveWorkouts(String workoutsJson) async {
+    return await saveString(_keyWorkouts, workoutsJson);
+  }
+
+  String? getWorkouts() {
+    return getString(_keyWorkouts);
+  }
+
+  Future<bool> saveChatMessages(String messagesJson) async {
+    return await saveString(_keyChatMessages, messagesJson);
+  }
+
+  String? getChatMessages() {
+    return getString(_keyChatMessages);
+  }
+
+  Future<bool> saveUserPreferences(String preferencesJson) async {
+    return await saveString(_keyUserPreferences, preferencesJson);
+  }
+
+  String? getUserPreferences() {
+    return getString(_keyUserPreferences);
+  }
+
+  // Clear all data
+  Future<bool> clearAll() async {
+    return await _prefs.clear();
   }
 }

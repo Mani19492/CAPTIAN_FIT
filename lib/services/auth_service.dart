@@ -1,69 +1,96 @@
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AuthService {
-  static bool _supabaseInitialized = false;
+  static SupabaseClient? _supabaseClient;
 
-  /// Public accessor for tests and other services
-  static bool get supabaseInitialized => _supabaseInitialized;
+  static SupabaseClient get supabase {
+    if (_supabaseClient == null) {
+      throw Exception('Supabase not initialized. Call initSupabase first.');
+    }
+    return _supabaseClient!;
+  }
 
-  /// Initializes Supabase if env variables are set. Safe to call multiple times.
+  static bool get isSupabaseConfigured {
+    final supabaseUrl = dotenv.env['SUPABASE_URL'];
+    final supabaseKey = dotenv.env['SUPABASE_KEY'];
+    return supabaseUrl != null && 
+           supabaseKey != null && 
+           supabaseUrl.isNotEmpty && 
+           supabaseKey.isNotEmpty;
+  }
+
   static Future<void> initSupabase() async {
-    if (_supabaseInitialized) return;
-    final url = dotenv.env['SUPABASE_URL'];
-    final key = dotenv.env['SUPABASE_KEY'];
-    if (url != null && key != null && url.isNotEmpty && key.isNotEmpty) {
-      await Supabase.initialize(url: url, anonKey: key);
-      _supabaseInitialized = true;
+    if (!isSupabaseConfigured) {
+      print('Supabase not configured. Skipping initialization.');
+      return;
+    }
+
+    final supabaseUrl = dotenv.env['SUPABASE_URL']!;
+    final supabaseKey = dotenv.env['SUPABASE_KEY']!;
+
+    try {
+      await Supabase.initialize(
+        url: supabaseUrl,
+        anonKey: supabaseKey,
+      );
+      
+      _supabaseClient = Supabase.instance.client;
+      print('Supabase initialized successfully');
+    } catch (e) {
+      print('Error initializing Supabase: $e');
     }
   }
 
-  static Future<bool> isLoggedIn() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('isLoggedIn') ?? false;
-  }
-
-  static Future<void> setGuestMode(bool guest) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('guestMode', guest);
-  }
-
-  static Future<bool> isGuestMode() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('guestMode') ?? false;
-  }
-
-  /// Sign in via Supabase - returns true if successful. This will fallback
-  /// to returning false when Supabase is not configured.
+  // Placeholder methods for authentication
   static Future<bool> signIn(String email, String password) async {
+    if (!isSupabaseConfigured) return false;
+    
     try {
-      await initSupabase();
-      if (!_supabaseInitialized) return false;
-      final res = await Supabase.instance.client.auth.signInWithPassword(
+      final response = await supabase.auth.signInWithPassword(
         email: email,
         password: password,
       );
-      if (res.session != null) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('isLoggedIn', true);
-        await prefs.setBool('guestMode', false);
-        return true;
-      }
+      return response.user != null;
+    } catch (e) {
+      print('Sign in error: $e');
       return false;
-    } catch (_) {
+    }
+  }
+
+  static Future<bool> signUp(String email, String password) async {
+    if (!isSupabaseConfigured) return false;
+    
+    try {
+      final response = await supabase.auth.signUp(
+        email: email,
+        password: password,
+      );
+      return response.user != null;
+    } catch (e) {
+      print('Sign up error: $e');
       return false;
     }
   }
 
   static Future<void> signOut() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isLoggedIn', false);
-    await prefs.setBool('guestMode', false);
+    if (!isSupabaseConfigured) return;
+    
     try {
-      if (_supabaseInitialized) {
-        await Supabase.instance.client.auth.signOut();
-      }
-    } catch (_) {}
+      await supabase.auth.signOut();
+    } catch (e) {
+      print('Sign out error: $e');
+    }
+  }
+
+  static String? getCurrentUserId() {
+    if (!isSupabaseConfigured) return null;
+    
+    try {
+      return supabase.auth.currentUser?.id;
+    } catch (e) {
+      print('Error getting current user ID: $e');
+      return null;
+    }
   }
 }

@@ -1,44 +1,44 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class GlassCard extends StatelessWidget {
   final Widget child;
-  final double radius;
-  final String? semanticsLabel;
+  final EdgeInsetsGeometry? margin;
+  final EdgeInsetsGeometry? padding;
+  final double? width;
+  final double? height;
 
   const GlassCard({
     super.key,
     required this.child,
-    this.radius = 22,
-    this.semanticsLabel,
+    this.margin,
+    this.padding,
+    this.width,
+    this.height,
   });
 
   @override
   Widget build(BuildContext context) {
-    final content = ClipRRect(
-      borderRadius: BorderRadius.circular(radius),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(radius),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.15),
-            ),
-          ),
-          child: child,
+    return Container(
+      width: width,
+      height: height,
+      margin: margin ?? const EdgeInsets.all(8.0),
+      padding: padding ?? const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
+      child: child,
     );
-
-    if (semanticsLabel != null) {
-      return Semantics(
-        label: semanticsLabel,
-        child: content,
-      );
-    }
-    return content;
   }
 }

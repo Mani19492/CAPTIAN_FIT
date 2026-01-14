@@ -1,107 +1,131 @@
-class FoodItem {
+class FitnessData {
+  final List<Meal> meals;
+  final List<Workout> workouts;
+  final List<ChatMessage> chatMessages;
+
+  FitnessData({
+    required this.meals,
+    required this.workouts,
+    required this.chatMessages,
+  });
+
+  FitnessData copyWith({
+    List<Meal>? meals,
+    List<Workout>? workouts,
+    List<ChatMessage>? chatMessages,
+  }) {
+    return FitnessData(
+      meals: meals ?? this.meals,
+      workouts: workouts ?? this.workouts,
+      chatMessages: chatMessages ?? this.chatMessages,
+    );
+  }
+}
+
+class Meal {
+  final String id;
   final String name;
   final int calories;
-  final double protein;
-  final double carbs;
-  final double fat;
-  final String imageUrl;
+  final DateTime timestamp;
+  final String clientId;
 
-  FoodItem({
+  Meal({
+    required this.id,
     required this.name,
     required this.calories,
-    required this.protein,
-    required this.carbs,
-    required this.fat,
-    required this.imageUrl,
+    required this.timestamp,
+    required this.clientId,
   });
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'name': name,
       'calories': calories,
-      'protein': protein,
-      'carbs': carbs,
-      'fat': fat,
-      'imageUrl': imageUrl,
+      'timestamp': timestamp.toIso8601String(),
+      'client_id': clientId,
     };
   }
 
-  factory FoodItem.fromJson(Map<String, dynamic> json) {
-    return FoodItem(
+  factory Meal.fromJson(Map<String, dynamic> json) {
+    return Meal(
+      id: json['id'],
       name: json['name'],
       calories: json['calories'],
-      protein: json['protein'].toDouble(),
-      carbs: json['carbs'].toDouble(),
-      fat: json['fat'].toDouble(),
-      imageUrl: json['imageUrl'],
+      timestamp: DateTime.parse(json['timestamp']),
+      clientId: json['client_id'],
     );
   }
 }
 
 class Workout {
+  final String id;
   final String name;
-  final String description;
-  final String gifUrl;
   final int duration; // in minutes
-  final int caloriesBurned;
+  final int calories;
+  final DateTime timestamp;
+  final String clientId;
 
   Workout({
+    required this.id,
     required this.name,
-    required this.description,
-    required this.gifUrl,
     required this.duration,
-    required this.caloriesBurned,
+    required this.calories,
+    required this.timestamp,
+    required this.clientId,
   });
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'name': name,
-      'description': description,
-      'gifUrl': gifUrl,
       'duration': duration,
-      'caloriesBurned': caloriesBurned,
+      'calories': calories,
+      'timestamp': timestamp.toIso8601String(),
+      'client_id': clientId,
     };
   }
 
   factory Workout.fromJson(Map<String, dynamic> json) {
     return Workout(
+      id: json['id'],
       name: json['name'],
-      description: json['description'],
-      gifUrl: json['gifUrl'],
       duration: json['duration'],
-      caloriesBurned: json['caloriesBurned'],
+      calories: json['calories'],
+      timestamp: DateTime.parse(json['timestamp']),
+      clientId: json['client_id'],
     );
   }
 }
 
-class DailyLog {
-  final DateTime date;
-  final List<FoodItem> foods;
-  final List<Workout> workouts;
+class ChatMessage {
+  final String id;
+  final String text;
+  final bool isUser;
+  final DateTime timestamp;
 
-  DailyLog({
-    required this.date,
-    required this.foods,
-    required this.workouts,
+  ChatMessage({
+    required this.id,
+    required this.text,
+    required this.isUser,
+    required this.timestamp,
   });
 
   Map<String, dynamic> toJson() {
     return {
-      'date': date.toIso8601String(),
-      'foods': foods.map((food) => food.toJson()).toList(),
-      'workouts': workouts.map((workout) => workout.toJson()).toList(),
+      'id': id,
+      'text': text,
+      'is_user': isUser,
+      'timestamp': timestamp.toIso8601String(),
     };
   }
 
-  factory DailyLog.fromJson(Map<String, dynamic> json) {
-    return DailyLog(
-      date: DateTime.parse(json['date']),
-      foods: (json['foods'] as List)
-          .map((food) => FoodItem.fromJson(food))
-          .toList(),
-      workouts: (json['workouts'] as List)
-          .map((workout) => Workout.fromJson(workout))
-          .toList(),
+  factory ChatMessage.fromJson(Map<String, dynamic> json) {
+    return ChatMessage(
+      id: json['id'],
+      text: json['text'],
+      isUser: json['is_user'],
+      timestamp: DateTime.parse(json['timestamp']),
     );
   }
 }

@@ -1,183 +1,177 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:captain_fit/storage/local_db.dart';
-import 'package:captain_fit/services/sync_service.dart';
 
-/// Backwards-compatible LocalStorage facade. Uses Drift `LocalDb` when
-/// available; falls back to SharedPreferences for bootstrapping/migration.
 class LocalStorage {
-  static LocalDb? _db;
+  static const String _keyMeals = 'captain_fit_meals';
+  static const String _keyWorkouts = 'captain_fit_workouts';
+  static const String _keyChatMessages = 'captain_fit_chat_messages';
+  
+  late SharedPreferences _prefs;
 
-  static Future<void> init() async {
-    if (_db != null) return;
-    try {
-      final db = LocalDb();
-      await db.connect();
-      _db = db;
-      // Migrate any existing SharedPreferences data into DB
-      await _migratePrefsToDb();
-    } catch (_) {
-      // If sqflite isn't available on the current platform, we'll fall back
-      // to SharedPreferences-only behavior.
-    }
+  static final LocalStorage _instance = LocalStorage._internal();
+
+  factory LocalStorage() => _instance;
+
+  LocalStorage._internal();
+
+  Future<void> init() async {
+    _prefs = await SharedPreferences.getInstance();
   }
 
-  static String _generateClientId() {
-    // Simple RFC4122 v4-like id using DateTime+random for offline uniqueness
-    final rand = DateTime.now().millisecondsSinceEpoch.toRadixString(36);
-    return 'c_${rand}_${(DateTime.now().microsecondsSinceEpoch % 100000).toString()}';
+  // Meals storage
+  Future<void> saveMeals(List<Meal> meals) async {
+    final mealsJson = jsonEncode(meals.map((meal) => meal.toJson()).toList());
+    await _prefs.setString(_keyMeals, mealsJson);
   }
 
-  static Future<void> _migratePrefsToDb() async {
-    final prefs = await SharedPreferences.getInstance();
-    final meals = prefs.getStringList('meals') ?? [];
-    for (final m in meals) {
-      try {
-        final decoded = jsonDecode(m);
-        if (decoded is Map<String, dynamic>) {
-          await _db?.insertMeal(decoded['text'] ?? m, decoded['time'] ?? DateTime.now().toIso8601String(), detectedFood: decoded['detectedFood']);
-        }
-      } catch (_) {}
-    }
-
-    final workouts = prefs.getStringList('workouts') ?? [];
-    for (final w in workouts) {
-      try {
-        final decoded = jsonDecode(w);
-        if (decoded is Map<String, dynamic>) {
-          await _db?.insertWorkout(decoded['name'] ?? w, decoded['time'] ?? DateTime.now().toIso8601String(), detectedExercise: decoded['detectedExercise']);
-        }
-      } catch (_) {}
-    }
-
-    final messages = prefs.getStringList('chat_messages') ?? [];
-    for (final s in messages) {
-      try {
-        final decoded = jsonDecode(s);
-        if (decoded is Map<String, dynamic>) {
-          await _db?.insertMessage(decoded['text'] ?? s, decoded['sender'] ?? 'user', decoded['time'] ?? DateTime.now().toIso8601String(), type: decoded['type']);
-        }
-      } catch (_) {}
-    }
-
-    // If migration succeeded, clear the prefs lists
-    if ((meals.isNotEmpty || workouts.isNotEmpty || messages.isNotEmpty) && _db != null) {
-      await prefs.remove('meals');
-      await prefs.remove('workouts');
-      await prefs.remove('chat_messages');
-    }
+  Future<List<Meal>> getMeals() async {
+    final mealsJson = _prefs.getString(_keyMeals);
+    if (mealsJson == null) return [];
+    
+    final List<dynamic> mealsList = jsonDecode(mealsJson);
+    return mealsList.map((meal) => Meal.fromJson(meal)).toList();
   }
 
-  static Future<void> saveMeal(String text, {String? detectedFood}) async {
-    await init();
-    final clientId = _generateClientId();
-    if (_db != null) {
-      await _db!.insertMeal(text, DateTime.now().toIso8601String(), detectedFood: detectedFood, clientId: clientId, synced: false);
-      // Enqueue for sync
-      await SyncService.enqueue({'type': 'meal', 'payload': {'text': text, 'time': DateTime.now().toIso8601String(), 'detectedFood': detectedFood, 'client_id': clientId}});
-      return;
-    }
+  // Workouts storage
+  Future<void> saveWorkouts(List<Workout> workouts) async {
+    final workoutsJson = jsonEncode(
+      workouts.map((workout) => workout.toJson()).toList(),
+    );
+    await _prefs.setString(_keyWorkouts, workoutsJson);
+  }
 
-    final prefs = await SharedPreferences.getInstance();
-    final list = prefs.getStringList('meals') ?? [];
-    list.add(jsonEncode({
+  Future<List<Workout>> getWorkouts() async {
+    final workoutsJson = _prefs.getString(_keyWorkouts);
+    if (workoutsJson == null) return [];
+    
+    final List<dynamic> workoutsList = jsonDecode(workoutsJson);
+    return workoutsList.map((workout) => Workout.fromJson(workout)).toList();
+  }
+
+  // Chat messages storage
+  Future<void> saveChatMessages(List<ChatMessage> messages) async {
+    final messagesJson = jsonEncode(
+      messages.map((message) => message.toJson()).toList(),
+    );
+    await _prefs.setString(_keyChatMessages, messagesJson);
+  }
+
+  Future<List<ChatMessage>> getChatMessages() async {
+    final messagesJson = _prefs.getString(_keyChatMessages);
+    if (messagesJson == null) return [];
+    
+    final List<dynamic> messagesList = jsonDecode(messagesJson);
+    return messagesList
+        .map((message) => ChatMessage.fromJson(message))
+        .toList();
+  }
+}
+
+// Data models
+class Meal {
+  final String id;
+  final String name;
+  final int calories;
+  final DateTime timestamp;
+  final String clientId; // For sync purposes
+
+  Meal({
+    required this.id,
+    required this.name,
+    required this.calories,
+    required this.timestamp,
+    required this.clientId,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'calories': calories,
+      'timestamp': timestamp.toIso8601String(),
+      'client_id': clientId,
+    };
+  }
+
+  factory Meal.fromJson(Map<String, dynamic> json) {
+    return Meal(
+      id: json['id'],
+      name: json['name'],
+      calories: json['calories'],
+      timestamp: DateTime.parse(json['timestamp']),
+      clientId: json['client_id'],
+    );
+  }
+}
+
+class Workout {
+  final String id;
+  final String name;
+  final int duration; // in minutes
+  final int calories;
+  final DateTime timestamp;
+  final String clientId; // For sync purposes
+
+  Workout({
+    required this.id,
+    required this.name,
+    required this.duration,
+    required this.calories,
+    required this.timestamp,
+    required this.clientId,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'duration': duration,
+      'calories': calories,
+      'timestamp': timestamp.toIso8601String(),
+      'client_id': clientId,
+    };
+  }
+
+  factory Workout.fromJson(Map<String, dynamic> json) {
+    return Workout(
+      id: json['id'],
+      name: json['name'],
+      duration: json['duration'],
+      calories: json['calories'],
+      timestamp: DateTime.parse(json['timestamp']),
+      clientId: json['client_id'],
+    );
+  }
+}
+
+class ChatMessage {
+  final String id;
+  final String text;
+  final bool isUser;
+  final DateTime timestamp;
+
+  ChatMessage({
+    required this.id,
+    required this.text,
+    required this.isUser,
+    required this.timestamp,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
       'text': text,
-      'time': DateTime.now().toIso8601String(),
-      'detectedFood': detectedFood,
-      'client_id': clientId,
-    }));
-    await prefs.setStringList('meals', list);
+      'is_user': isUser,
+      'timestamp': timestamp.toIso8601String(),
+    };
   }
 
-  static Future<List<Map<String, dynamic>>> getParsedMeals() async {
-    await init();
-    if (_db != null) {
-      return _db!.getMealsAsMaps();
-    }
-
-    final list = await getMeals();
-    return list.map((s) {
-      try {
-        final decoded = jsonDecode(s) as Map<String, dynamic>;
-        return decoded;
-      } catch (_) {
-        return {'text': s, 'time': '', 'detectedFood': null};
-      }
-    }).toList();
-  }
-
-  static Future<List<String>> getMeals() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getStringList('meals') ?? [];
-  }
-
-  static Future<void> saveWorkout(String workout, {String? detectedExercise}) async {
-    await init();
-    final clientId = _generateClientId();
-    if (_db != null) {
-      await _db!.insertWorkout(workout, DateTime.now().toIso8601String(), detectedExercise: detectedExercise, clientId: clientId, synced: false);
-      await SyncService.enqueue({'type': 'workout', 'payload': {'name': workout, 'time': DateTime.now().toIso8601String(), 'detectedExercise': detectedExercise, 'client_id': clientId}});
-      return;
-    }
-
-    final prefs = await SharedPreferences.getInstance();
-    final list = prefs.getStringList('workouts') ?? [];
-    list.add(jsonEncode({
-      'name': workout,
-      'time': DateTime.now().toIso8601String(),
-      'detectedExercise': detectedExercise,
-      'client_id': clientId,
-    }));
-    await prefs.setStringList('workouts', list);
-  }
-
-  static Future<List<String>> getWorkouts() async {
-    await init();
-    if (_db != null) {
-      final rows = await _db!.getWorkoutsAsMaps();
-      return rows.map((r) => r['name'] as String? ?? '').where((s) => s.isNotEmpty).toList();
-    }
-
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getStringList('workouts') ?? [];
-  }
-
-  static Future<void> saveMessage(String text, String sender, {String? type}) async {
-    await init();
-    final clientId = _generateClientId();
-    if (_db != null) {
-      await _db!.insertMessage(text, sender, DateTime.now().toIso8601String(), type: type, clientId: clientId, synced: false);
-      await SyncService.enqueue({'type': 'message', 'payload': {'text': text, 'sender': sender, 'time': DateTime.now().toIso8601String(), 'type': type, 'client_id': clientId}});
-      return;
-    }
-
-    final prefs = await SharedPreferences.getInstance();
-    final list = prefs.getStringList('chat_messages') ?? [];
-    list.add(jsonEncode({
-      'text': text,
-      'sender': sender,
-      'time': DateTime.now().toIso8601String(),
-      'type': type,
-      'client_id': clientId,
-    }));
-    await prefs.setStringList('chat_messages', list);
-  }
-
-  static Future<List<Map<String, dynamic>>> getChatMessages() async {
-    await init();
-    if (_db != null) return _db!.getMessagesAsMaps();
-
-    final prefs = await SharedPreferences.getInstance();
-    final list = prefs.getStringList('chat_messages') ?? [];
-    return list.map<Map<String, dynamic>>((s) {
-      try {
-        final decoded = jsonDecode(s);
-        if (decoded is Map<String, dynamic>) return decoded;
-        if (decoded is Map) return Map<String, dynamic>.from(decoded);
-        return <String, dynamic>{'text': s, 'time': ''};
-      } catch (_) {
-        return <String, dynamic>{'text': s, 'time': ''};
-      }
-    }).toList();
+  factory ChatMessage.fromJson(Map<String, dynamic> json) {
+    return ChatMessage(
+      id: json['id'],
+      text: json['text'],
+      isUser: json['is_user'],
+      timestamp: DateTime.parse(json['timestamp']),
+    );
   }
 }

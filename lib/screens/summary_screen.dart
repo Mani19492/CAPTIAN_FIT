@@ -1,114 +1,322 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:captain_fit/services/summary_service.dart';
-import 'package:captain_fit/core/glass_background.dart';
-import 'package:captain_fit/core/glass_card.dart';
 
-class SummaryScreen extends StatefulWidget {
+class SummaryScreen extends StatelessWidget {
   const SummaryScreen({super.key});
 
   @override
-  State<SummaryScreen> createState() => _SummaryScreenState();
+  Widget build(BuildContext context) {
+    final dailySummary = SummaryService.calculateDailySummary();
+    final weeklySummary = SummaryService.calculateWeeklySummary();
+    
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Daily Summary'),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Today\'s Progress',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            _DailySummaryCard(summary: dailySummary),
+            const SizedBox(height: 24),
+            const Text(
+              'Weekly Overview',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            _WeeklySummaryCard(summary: weeklySummary),
+            const SizedBox(height: 24),
+            const Text(
+              'Nutrition Breakdown',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            const _NutritionChart(),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class _SummaryScreenState extends State<SummaryScreen> {
-  DailySummary? _summary;
-  bool _loading = true;
+class _DailySummaryCard extends StatelessWidget {
+  final DailySummary summary;
 
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    final s = await SummaryService.dailySummary(DateTime.now());
-    setState(() {
-      _summary = s;
-      _loading = false;
-    });
-  }
+  const _DailySummaryCard({required this.summary});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: GlassBackground(
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-                      const Text('Today\'s Summary', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
-                      const SizedBox(height: 12),
-                      GlassCard(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Expanded(child: Text('Meals logged', style: TextStyle(color: Color(0xFF9CA3AF)))),
-                                AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 600),
-                                  child: Text('${_summary?.mealsLogged ?? 0}', key: ValueKey(_summary?.mealsLogged ?? 0), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                const Expanded(child: Text('Workouts', style: TextStyle(color: Color(0xFF9CA3AF)))),
-                                AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 600),
-                                  child: Text('${_summary?.workoutsLogged ?? 0}', key: ValueKey(_summary?.workoutsLogged ?? 0), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                const Expanded(child: Text('Calories in', style: TextStyle(color: Color(0xFF9CA3AF)))),
-                                AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 600),
-                                  child: Text('${_summary?.caloriesIn ?? 0} kcal', key: ValueKey(_summary?.caloriesIn ?? 0), style: const TextStyle(color: Colors.white)),
-                                ),
-                              ],
-                            ),
-                            Row(
-                              children: [
-                                const Expanded(child: Text('Calories out', style: TextStyle(color: Color(0xFF9CA3AF)))),
-                                AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 600),
-                                  child: Text('${_summary?.caloriesOut ?? 0} kcal', key: ValueKey(_summary?.caloriesOut ?? 0), style: const TextStyle(color: Colors.white)),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                const Expanded(child: Text('Status', style: TextStyle(color: Color(0xFF9CA3AF)))),
-                                AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 600),
-                                  child: Row(
-                                    key: ValueKey(_summary?.status ?? ''),
-                                    children: [
-                                      Icon(_summary?.status == 'Fat loss supported' ? Icons.check_circle : Icons.warning, color: _summary?.status == 'Fat loss supported' ? const Color(0xFF10B981) : const Color(0xFFFFB800)),
-                                      const SizedBox(width: 6),
-                                      Text(_summary?.status ?? '', style: const TextStyle(color: Colors.white)),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      )
-                    ],
-                  ),
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _SummaryItem(
+                  icon: Icons.restaurant,
+                  value: summary.caloriesConsumed.toString(),
+                  label: 'Consumed',
+                  unit: 'kcal',
+                ),
+                _SummaryItem(
+                  icon: Icons.local_fire_department,
+                  value: summary.caloriesBurned.toString(),
+                  label: 'Burned',
+                  unit: 'kcal',
+                ),
+                _SummaryItem(
+                  icon: Icons.access_time,
+                  value: summary.workoutDuration.toString(),
+                  label: 'Workout',
+                  unit: 'min',
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 16),
+            const Text(
+              'Net Calories',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              summary.netCalories.toString(),
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              summary.netCalories >= 0 
+                  ? 'Surplus' 
+                  : 'Deficit',
+              style: TextStyle(
+                fontSize: 16,
+                color: summary.netCalories >= 0 
+                    ? Colors.red 
+                    : Colors.green,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryItem extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
+  final String unit;
+
+  const _SummaryItem({
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.unit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Icon(icon, size: 32, color: Theme.of(context).colorScheme.primary),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
           ),
         ),
+        Text('$label ($unit)'),
+      ],
+    );
+  }
+}
+
+class _WeeklySummaryCard extends StatelessWidget {
+  final WeeklySummary summary;
+
+  const _WeeklySummaryCard({required this.summary});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'This Week',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _WeeklyStat(
+                  label: 'Calories\nConsumed',
+                  value: summary.totalCaloriesConsumed.toString(),
+                ),
+                _WeeklyStat(
+                  label: 'Calories\nBurned',
+                  value: summary.totalCaloriesBurned.toString(),
+                ),
+                _WeeklyStat(
+                  label: 'Workout\nDays',
+                  value: summary.workoutDays.toString(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Text('Activity Progress'),
+            const SizedBox(height: 8),
+            LinearProgressIndicator(
+              value: summary.workoutDays / 7,
+              backgroundColor: Colors.grey[800],
+              valueColor: AlwaysStoppedAnimation<Color>(
+                Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text('${summary.workoutDays}/7 days active'),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WeeklyStat extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _WeeklyStat({
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey[400],
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _NutritionChart extends StatelessWidget {
+  const _NutritionChart();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Daily Nutrition',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            const SizedBox(
+              height: 200,
+              child: PieChartSample(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class PieChartSample extends StatelessWidget {
+  const PieChartSample({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return PieChart(
+      PieChartData(
+        sectionsSpace: 0,
+        centerSpaceRadius: 40,
+        sections: [
+          PieChartSectionData(
+            color: const Color(0xFF4FC3F7),
+            value: 35,
+            title: '35%',
+            radius: 50,
+            titleStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          PieChartSectionData(
+            color: const Color(0xFF69F0AE),
+            value: 25,
+            title: '25%',
+            radius: 50,
+            titleStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          PieChartSectionData(
+            color: const Color(0xFFFFD740),
+            value: 20,
+            title: '20%',
+            radius: 50,
+            titleStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          PieChartSectionData(
+            color: const Color(0xFFE040FB),
+            value: 20,
+            title: '20%',
+            radius: 50,
+            titleStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ],
       ),
     );
   }

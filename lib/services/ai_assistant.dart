@@ -1,243 +1,149 @@
-class FoodSuggestion {
-  final String name;
-  final String description;
-  final String emoji;
+import 'package:captain_fit/storage/local_storage.dart';
 
-  FoodSuggestion({
-    required this.name,
-    required this.description,
-    required this.emoji,
-  });
+class AIAssistantService {
+  final LocalStorage _storage = LocalStorage();
+  
+  // Process user message and generate response
+  Future<AssistantResponse> processMessage(String message) async {
+    // Save user message
+    final userMessage = ChatMessage(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      text: message,
+      isUser: true,
+      timestamp: DateTime.now(),
+    );
+    
+    // Detect intent and generate response
+    final intent = _detectIntent(message);
+    final responseText = _generateResponse(message, intent);
+    
+    // Create assistant response
+    final assistantMessage = ChatMessage(
+      id: (DateTime.now().millisecondsSinceEpoch + 1).toString(),
+      text: responseText,
+      isUser: false,
+      timestamp: DateTime.now(),
+    );
+    
+    // Save both messages
+    final messages = await _storage.getChatMessages();
+    messages.addAll([userMessage, assistantMessage]);
+    await _storage.saveChatMessages(messages);
+    
+    return AssistantResponse(
+      userMessage: userMessage,
+      assistantMessage: assistantMessage,
+      intent: intent,
+    );
+  }
+  
+  // Detect intent from user message
+  String _detectIntent(String message) {
+    final lowerMessage = message.toLowerCase();
+    
+    // Food logging intents
+    if (lowerMessage.contains('i ate') || 
+        lowerMessage.contains('i had') || 
+        lowerMessage.contains('i consumed')) {
+      return 'food_log';
+    }
+    
+    // Workout logging intents
+    if (lowerMessage.contains('i did') || 
+        lowerMessage.contains('i completed') || 
+        lowerMessage.contains('finished workout')) {
+      return 'workout_log';
+    }
+    
+    // Question intents
+    if (lowerMessage.contains('can i') || 
+        lowerMessage.contains('should i') || 
+        lowerMessage.contains('is it ok')) {
+      return 'question';
+    }
+    
+    // Greeting intents
+    if (lowerMessage.contains('hello') || 
+        lowerMessage.contains('hi') || 
+        lowerMessage.contains('hey')) {
+      return 'greeting';
+    }
+    
+    // Workout suggestion intents
+    if (lowerMessage.contains('workout') || 
+        lowerMessage.contains('exercise') || 
+        lowerMessage.contains('train')) {
+      return 'workout_suggestion';
+    }
+    
+    // Meal suggestion intents
+    if (lowerMessage.contains('meal') || 
+        lowerMessage.contains('food') || 
+        lowerMessage.contains('eat') || 
+        lowerMessage.contains('lunch') || 
+        lowerMessage.contains('dinner') || 
+        lowerMessage.contains('breakfast')) {
+      return 'meal_suggestion';
+    }
+    
+    return 'general';
+  }
+  
+  // Generate response based on intent
+  String _generateResponse(String message, String intent) {
+    switch (intent) {
+      case 'food_log':
+        return 'Great job logging your meal! I\'ve recorded that for you. '
+            'Would you like to add anything else to your food log?';
+        
+      case 'workout_log':
+        return 'Awesome work! I\'ve logged your workout. '
+            'Keep up the great effort!';
+        
+      case 'question':
+        return 'That\'s a good question! Based on general nutrition guidelines, '
+            'it\'s best to maintain a balanced diet. Would you like specific advice?';
+        
+      case 'greeting':
+        return 'Hello! I\'m CaptainFit, your personal fitness assistant. '
+            'How can I help you with your fitness journey today?';
+        
+      case 'workout_suggestion':
+        return 'Here\'s a great workout suggestion: Try 3 sets of 15 push-ups, '
+            '20 squats, and a 1-minute plank. This will give you a solid full-body workout!';
+        
+      case 'meal_suggestion':
+        return 'How about a healthy meal with grilled chicken, quinoa, and '
+            'roasted vegetables? It\'s packed with protein and nutrients!';
+        
+      case 'general':
+      default:
+        return 'I\'m here to help with your fitness journey! You can log meals, '
+            'track workouts, or ask for suggestions. What would you like to do?';
+    }
+  }
+  
+  // Get chat history
+  Future<List<ChatMessage>> getChatHistory() async {
+    return await _storage.getChatMessages();
+  }
+  
+  // Clear chat history
+  Future<void> clearChatHistory() async {
+    final messages = await _storage.getChatMessages();
+    messages.clear();
+    await _storage.saveChatMessages(messages);
+  }
 }
 
-class ExerciseSuggestion {
-  final String name;
-  final String description;
-  final String imageUrl;
-  final String category;
-  final String difficulty;
-
-  ExerciseSuggestion({
-    required this.name,
-    required this.description,
-    required this.imageUrl,
-    required this.category,
-    required this.difficulty,
+class AssistantResponse {
+  final ChatMessage userMessage;
+  final ChatMessage assistantMessage;
+  final String intent;
+  
+  AssistantResponse({
+    required this.userMessage,
+    required this.assistantMessage,
+    required this.intent,
   });
-}
-
-class AIAssistant {
-  static const List<String> foodKeywords = [
-    'ate', 'eating', 'had', 'consumed', 'breakfast', 'lunch', 'dinner',
-    'snack', 'meal', 'food', 'juice', 'coffee', 'tea', 'drink'
-  ];
-
-  static const List<String> exerciseKeywords = [
-    'did', 'did', 'completed', 'finished', 'exercised', 'workout',
-    'trained', 'ran', 'lifted', 'squats', 'pushups', 'gym', 'exercise'
-  ];
-
-  static final Map<String, FoodSuggestion> foodDatabase = {
-    'chicken': FoodSuggestion(
-      name: 'Grilled Chicken Breast',
-      description: 'Lean protein, rich in nutrients. Perfect for muscle building.',
-      emoji: '🍗',
-    ),
-    'eggs': FoodSuggestion(
-      name: 'Eggs',
-      description: 'Complete protein source with healthy fats. Great for any meal.',
-      emoji: '🥚',
-    ),
-    'salmon': FoodSuggestion(
-      name: 'Salmon',
-      description: 'Rich in omega-3 fatty acids. Excellent for heart and brain health.',
-      emoji: '🐟',
-    ),
-    'greek yogurt': FoodSuggestion(
-      name: 'Greek Yogurt',
-      description: 'High protein, probiotics. Great as snack or with fruits.',
-      emoji: '🥛',
-    ),
-    'broccoli': FoodSuggestion(
-      name: 'Broccoli',
-      description: 'Fiber-rich vegetable. Full of vitamins and minerals.',
-      emoji: '🥦',
-    ),
-    'banana': FoodSuggestion(
-      name: 'Banana',
-      description: 'Great carbs and potassium. Perfect pre or post-workout.',
-      emoji: '🍌',
-    ),
-    'brown rice': FoodSuggestion(
-      name: 'Brown Rice',
-      description: 'Complex carbs for sustained energy. Fiber-rich.',
-      emoji: '🍚',
-    ),
-    'almonds': FoodSuggestion(
-      name: 'Almonds',
-      description: 'Healthy fats and protein. Perfect protein-rich snack.',
-      emoji: '🌰',
-    ),
-  };
-
-  static final Map<String, ExerciseSuggestion> exerciseDatabase = {
-    'pushups': ExerciseSuggestion(
-      name: 'Push-ups',
-      description: 'Great for chest, shoulders, and triceps. No equipment needed.',
-      imageUrl: 'https://img.icons8.com/color/96/000000/exercise.png',
-      category: 'Chest',
-      difficulty: 'Beginner',
-    ),
-    'squats': ExerciseSuggestion(
-      name: 'Squats',
-      description: 'Strengthens legs and glutes. Bodyweight exercise.',
-      imageUrl: 'https://img.icons8.com/color/96/000000/exercise.png',
-      category: 'Legs',
-      difficulty: 'Beginner',
-    ),
-    'plank': ExerciseSuggestion(
-      name: 'Plank',
-      description: 'Core strengthening exercise. Build endurance over time.',
-      imageUrl: 'https://img.icons8.com/color/96/000000/exercise.png',
-      category: 'Core',
-      difficulty: 'Intermediate',
-    ),
-    'running': ExerciseSuggestion(
-      name: 'Running',
-      description: 'Cardio exercise. Great for heart health and endurance.',
-      imageUrl: 'https://img.icons8.com/color/96/000000/exercise.png',
-      category: 'Cardio',
-      difficulty: 'Beginner',
-    ),
-    'dumbbell bench press': ExerciseSuggestion(
-      name: 'Dumbbell Bench Press',
-      description: 'Chest and triceps. Requires dumbbells.',
-      imageUrl: 'https://img.icons8.com/color/96/000000/exercise.png',
-      category: 'Chest',
-      difficulty: 'Intermediate',
-    ),
-    'deadlifts': ExerciseSuggestion(
-      name: 'Deadlifts',
-      description: 'Full body workout. One of the best compound movements.',
-      imageUrl: 'https://img.icons8.com/color/96/000000/exercise.png',
-      category: 'Back',
-      difficulty: 'Advanced',
-    ),
-  };
-
-  static String? detectFood(String message) {
-    final lowerMessage = message.toLowerCase();
-    for (final food in foodDatabase.keys) {
-      if (lowerMessage.contains(food)) {
-        return food;
-      }
-    }
-    return null;
-  }
-
-  static String? detectExercise(String message) {
-    final lowerMessage = message.toLowerCase();
-    for (final exercise in exerciseDatabase.keys) {
-      if (lowerMessage.contains(exercise)) {
-        return exercise;
-      }
-    }
-    return null;
-  }
-
-  // General log confirmation keywords ("I ate", "I had", etc.)
-  static const List<String> logConfirmationKeywords = [
-    'i ate', 'i had', 'i drank', 'i consumed', 'ate', 'had', 'drank', 'consumed'
-  ];
-
-  // Phrases that indicate advice/permission requests (no automatic logging)
-  static const List<String> advicePhrases = [
-    'can i eat', 'is it okay', 'is it ok if', 'should i eat', 'can i have', 'is it okay if'
-  ];
-
-  static bool isLogIntent(String message) {
-    final lowerMessage = message.toLowerCase();
-    final hasConfirmation = logConfirmationKeywords.any((kw) => lowerMessage.contains(kw));
-    final isAdvice = advicePhrases.any((kw) => lowerMessage.contains(kw));
-    return hasConfirmation && !isAdvice;
-  }
-
-  static bool isAdviceQuery(String message) {
-    final lowerMessage = message.toLowerCase();
-    return advicePhrases.any((kw) => lowerMessage.contains(kw));
-  }
-
-  static bool isFoodLog(String message) {
-    // Keep for backward compatibility: returns true when message both contains
-    // a food keyword and a recognizable food from the DB. Prefer using
-    // `isLogIntent` for generic confirmation detection.
-    final lowerMessage = message.toLowerCase();
-    final hasFoodKeyword = foodKeywords.any((kw) => lowerMessage.contains(kw));
-    final hasFood = detectFood(message) != null;
-    return hasFoodKeyword && hasFood;
-  }
-
-  static bool isExerciseLog(String message) {
-    final lowerMessage = message.toLowerCase();
-    final hasExerciseKeyword = exerciseKeywords.any((kw) => lowerMessage.contains(kw));
-    final hasExercise = detectExercise(message) != null;
-    return hasExerciseKeyword && hasExercise;
-  }
-
-  static List<FoodSuggestion> getFoodSuggestions(String query) {
-    final lowerQuery = query.toLowerCase();
-    return foodDatabase.values
-        .where((food) =>
-            food.name.toLowerCase().contains(lowerQuery) ||
-            food.description.toLowerCase().contains(lowerQuery))
-        .toList();
-  }
-
-  static List<ExerciseSuggestion> getExerciseSuggestions(String query) {
-    final lowerQuery = query.toLowerCase();
-    return exerciseDatabase.values
-        .where((exercise) =>
-            exercise.name.toLowerCase().contains(lowerQuery) ||
-            exercise.description.toLowerCase().contains(lowerQuery))
-        .toList();
-  }
-
-  static String generateAIResponse(String message) {
-    final lowerMessage = message.toLowerCase();
-
-    if (lowerMessage.contains('suggest') && lowerMessage.contains('food')) {
-      return '🍽️ I can suggest some nutritious options! Would you like suggestions for:';
-    }
-
-    if (lowerMessage.contains('suggest') && lowerMessage.contains('exercise')) {
-      return '💪 Great! Here are some workout suggestions:';
-    }
-
-    if (lowerMessage.contains('how many')) {
-      return '📊 Let me help you track that!';
-    }
-
-    if (lowerMessage.contains('help')) {
-      return '👋 I can help you with:\n• Food suggestions\n• Exercise recommendations\n• Logging meals and workouts\n• Tracking your progress';
-    }
-
-    if (isLogIntent(message)) {
-      final detectedFood = detectFood(message);
-      if (detectedFood != null) {
-        final food = foodDatabase[detectedFood];
-        return '✅ Logged: ${food?.emoji} ${food?.name}\n\n💡 ${food?.description}';
-      }
-
-      final detectedExercise = detectExercise(message);
-      if (detectedExercise != null) {
-        final exercise = exerciseDatabase[detectedExercise];
-        return '✅ Logged: 💪 ${exercise?.name}\n\n📝 ${exercise?.description}';
-      }
-
-      // Generic confirmation-based log when no known food/exercise is detected
-      return '✅ Logged: Got it. I\'ve saved that for you.';
-    }
-
-    return '💬 That sounds great! Would you like to:\n• Log a meal\n• Log a workout\n• Get suggestions\n• View progress';
-  }
 }

@@ -1,405 +1,313 @@
 import 'package:flutter/material.dart';
-import 'package:captain_fit/models/fitness_data.dart';
-import 'package:captain_fit/services/storage_service.dart';
+import 'package:captain_fit/services/summary_service.dart';
 
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
-}
-
-class _ProfileScreenState extends State<ProfileScreen> {
-  final StorageService _storageService = StorageService();
-  List<DailyLog> _dailyLogs = [];
-  List<FoodItem> _foodHistory = [];
-  List<Workout> _workoutHistory = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    final logs = await _storageService.getDailyLogs();
-    final foods = await _storageService.getFoodHistory();
-    final workouts = await _storageService.getWorkoutHistory();
-    
-    setState(() {
-      _dailyLogs = logs;
-      _foodHistory = foods;
-      _workoutHistory = workouts;
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final weeklySummary = SummaryService.calculateWeeklySummary();
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadData,
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Profile header
-            _buildProfileHeader(),
+            const _ProfileHeader(),
             const SizedBox(height: 24),
-            
-            // Stats overview
-            _buildStatsOverview(),
+            const Text(
+              'Weekly Summary',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            _WeeklySummaryCard(summary: weeklySummary),
             const SizedBox(height: 24),
-            
-            // Recent activity
-            _buildSectionTitle('Recent Activity'),
-            _buildRecentActivity(),
-            const SizedBox(height: 24),
-            
-            // Food history
-            _buildSectionTitle('Recent Foods'),
-            _buildFoodHistory(),
-            const SizedBox(height: 24),
-            
-            // Workout history
-            _buildSectionTitle('Recent Workouts'),
-            _buildWorkoutHistory(),
+            const Text(
+              'Achievements',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            const _AchievementsGrid(),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildProfileHeader() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.grey[800],
-        borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          colors: [
-            Colors.blue.withOpacity(0.3),
-            Colors.blue.withOpacity(0.1),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
+class _ProfileHeader extends StatelessWidget {
+  const _ProfileHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
       child: Column(
         children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: Colors.grey[700],
-              borderRadius: BorderRadius.circular(40),
-              border: Border.all(color: Colors.blue, width: 2),
-            ),
-            child: const Icon(
+          const CircleAvatar(
+            radius: 50,
+            backgroundColor: Colors.blue,
+            child: Icon(
               Icons.person,
-              size: 40,
-              color: Colors.blue,
+              size: 50,
+              color: Colors.white,
             ),
           ),
           const SizedBox(height: 16),
           const Text(
-            'Fitness Enthusiast',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
+            'Captain Fit User',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           Text(
-            'Member since ${DateTime.now().year}',
-            style: const TextStyle(
-              color: Colors.grey,
+            'Member since Jan 2026',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[400],
             ),
+          ),
+          const SizedBox(height: 16),
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _StatItem(
+                value: '12',
+                label: 'Days Streak',
+                icon: Icons.local_fire_department,
+              ),
+              SizedBox(width: 32),
+              _StatItem(
+                value: '42',
+                label: 'Workouts',
+                icon: Icons.fitness_center,
+              ),
+              SizedBox(width: 32),
+              _StatItem(
+                value: '18',
+                label: 'Achievements',
+                icon: Icons.emoji_events,
+              ),
+            ],
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildStatsOverview() {
-    // Calculate stats
-    int totalCalories = 0;
-    int totalWorkouts = 0;
-    int streak = 0;
-    
-    for (var log in _dailyLogs) {
-      totalCalories += log.foods.fold(0, (sum, food) => sum + food.calories);
-      totalWorkouts += log.workouts.length;
-    }
-    
-    // Calculate streak (simplified)
-    if (_dailyLogs.isNotEmpty) {
-      streak = _dailyLogs.length;
-    }
-    
-    return Row(
+class _StatItem extends StatelessWidget {
+  final String value;
+  final String label;
+  final IconData icon;
+
+  const _StatItem({
+    required this.value,
+    required this.label,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
       children: [
-        _buildStatCard(
-          title: 'Calories',
-          value: totalCalories.toString(),
-          icon: Icons.local_fire_department,
-          color: Colors.orange,
+        Icon(icon, size: 32, color: Theme.of(context).colorScheme.primary),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        const SizedBox(width: 16),
-        _buildStatCard(
-          title: 'Workouts',
-          value: totalWorkouts.toString(),
-          icon: Icons.fitness_center,
-          color: Colors.blue,
-        ),
-        const SizedBox(width: 16),
-        _buildStatCard(
-          title: 'Streak',
-          value: '$streak days',
-          icon: Icons.local_fire_department,
-          color: Colors.red,
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey[400],
+          ),
         ),
       ],
     );
   }
+}
 
-  Widget _buildStatCard({
-    required String title,
-    required String value,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Expanded(
-      child: Container(
+class _WeeklySummaryCard extends StatelessWidget {
+  final WeeklySummary summary;
+
+  const _WeeklySummaryCard({required this.summary});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.grey[800],
-          borderRadius: BorderRadius.circular(16),
-        ),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _SummaryStat(
+                  label: 'Calories\nConsumed',
+                  value: summary.totalCaloriesConsumed.toString(),
+                  unit: 'kcal',
+                ),
+                _SummaryStat(
+                  label: 'Calories\nBurned',
+                  value: summary.totalCaloriesBurned.toString(),
+                  unit: 'kcal',
+                ),
+                _SummaryStat(
+                  label: 'Workout\nTime',
+                  value: summary.totalWorkoutDuration.toString(),
+                  unit: 'min',
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            LinearProgressIndicator(
+              value: summary.workoutDays / 7,
+              backgroundColor: Colors.grey[800],
+              valueColor: AlwaysStoppedAnimation<Color>(
+                Theme.of(context).colorScheme.primary,
               ),
             ),
+            const SizedBox(height: 8),
             Text(
-              title,
-              style: const TextStyle(
-                color: Colors.grey,
-                fontSize: 12,
-              ),
+              '${summary.workoutDays}/7 days active this week',
+              style: const TextStyle(fontSize: 14),
             ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildSectionTitle(String title) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
+class _SummaryStat extends StatelessWidget {
+  final String label;
+  final String value;
+  final String unit;
+
+  const _SummaryStat({
+    required this.label,
+    required this.value,
+    required this.unit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey[400],
+          ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildRecentActivity() {
-    if (_dailyLogs.isEmpty) {
-      return _buildEmptyState('No activity yet');
-    }
-    
-    // Get last 5 activities
-    final recentLogs = _dailyLogs.reversed.take(5).toList();
-    
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[800],
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: recentLogs.map((log) {
-          return _buildActivityItem(log);
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildActivityItem(DailyLog log) {
-    return ListTile(
-      leading: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: Colors.grey[700],
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: const Icon(Icons.calendar_today, size: 20),
-      ),
-      title: Text(
-        '${log.date.day}/${log.date.month}/${log.date.year}',
-        style: const TextStyle(fontWeight: FontWeight.w500),
-      ),
-      subtitle: Text(
-        '${log.foods.length} foods, ${log.workouts.length} workouts',
-        style: const TextStyle(fontSize: 12),
-      ),
-      trailing: const Icon(Icons.chevron_right),
-    );
-  }
-
-  Widget _buildFoodHistory() {
-    if (_foodHistory.isEmpty) {
-      return _buildEmptyState('No food history');
-    }
-    
-    return SizedBox(
-      height: 120,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: _foodHistory.length,
-        itemBuilder: (context, index) {
-          final food = _foodHistory[index];
-          return _buildFoodItem(food);
-        },
-      ),
-    );
-  }
-
-  Widget _buildWorkoutHistory() {
-    if (_workoutHistory.isEmpty) {
-      return _buildEmptyState('No workout history');
-    }
-    
-    return SizedBox(
-      height: 120,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: _workoutHistory.length,
-        itemBuilder: (context, index) {
-          final workout = _workoutHistory[index];
-          return _buildWorkoutItem(workout);
-        },
-      ),
-    );
-  }
-
-  Widget _buildFoodItem(FoodItem food) {
-    return Container(
-      width: 100,
-      margin: const EdgeInsets.only(right: 12),
-      decoration: BoxDecoration(
-        color: Colors.grey[800],
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: Colors.grey[700],
-              borderRadius: BorderRadius.circular(25),
-            ),
-            child: const Icon(Icons.fastfood, color: Colors.orange),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            food.name,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Text(
-            '${food.calories} cal',
-            style: const TextStyle(
-              fontSize: 10,
-              color: Colors.grey,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWorkoutItem(Workout workout) {
-    return Container(
-      width: 100,
-      margin: const EdgeInsets.only(right: 12),
-      decoration: BoxDecoration(
-        color: Colors.grey[800],
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: Colors.grey[700],
-              borderRadius: BorderRadius.circular(25),
-            ),
-            child: const Icon(Icons.fitness_center, color: Colors.blue),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            workout.name,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Text(
-            '${workout.duration} min',
-            style: const TextStyle(
-              fontSize: 10,
-              color: Colors.grey,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(String text) {
-    return Container(
-      height: 100,
-      decoration: BoxDecoration(
-        color: Colors.grey[800],
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Center(
-        child: Text(
-          text,
+        const SizedBox(height: 4),
+        Text(
+          value,
           style: const TextStyle(
-            color: Colors.grey,
-            fontSize: 16,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
           ),
+        ),
+        Text(
+          unit,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[400],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AchievementsGrid extends StatelessWidget {
+  const _AchievementsGrid();
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.count(
+      crossAxisCount: 3,
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      children: const [
+        _AchievementItem(
+          icon: Icons.local_fire_department,
+          title: '7 Day\nStreak',
+          unlocked: true,
+        ),
+        _AchievementItem(
+          icon: Icons.fitness_center,
+          title: '100\nWorkouts',
+          unlocked: false,
+        ),
+        _AchievementItem(
+          icon: Icons.restaurant,
+          title: '30 Days\nLogged',
+          unlocked: true,
+        ),
+        _AchievementItem(
+          icon: Icons.emoji_events,
+          title: 'Early\nBird',
+          unlocked: false,
+        ),
+        _AchievementItem(
+          icon: Icons.self_improvement,
+          title: 'Mindful\nEater',
+          unlocked: true,
+        ),
+        _AchievementItem(
+          icon: Icons.track_changes,
+          title: 'Goal\nSetter',
+          unlocked: false,
+        ),
+      ],
+    );
+  }
+}
+
+class _AchievementItem extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final bool unlocked;
+
+  const _AchievementItem({
+    required this.icon,
+    required this.title,
+    required this.unlocked,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: unlocked ? null : Colors.grey[800],
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 32,
+              color: unlocked ? Theme.of(context).colorScheme.primary : Colors.grey,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                color: unlocked ? null : Colors.grey,
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -1,146 +1,98 @@
-import 'dart:math';
-import 'package:captain_fit/models/fitness_data.dart';
-
 class AIService {
-  static final List<String> _greetingResponses = [
-    "Hello! I'm CaptainFit, your personal fitness assistant. How can I help you today?",
-    "Hi there! Ready to get fit? Ask me about food suggestions or workout recommendations!",
-    "Hey! I'm here to help you with your fitness journey. What would you like to know?",
-  ];
+  // Mock AI responses for different intents
+  static const Map<String, List<String>> _responses = {
+    'greeting': [
+      'Hello! I\'m CaptainFit, your personal fitness assistant. How can I help you today?',
+      'Hi there! Ready to get fit? Ask me anything about nutrition or workouts!',
+      'Greetings! I\'m here to help you achieve your fitness goals. What do you need?',
+    ],
+    'workout_suggestion': [
+      'How about a 20-minute HIIT workout to get your heart pumping?',
+      'I recommend a full-body strength training session today.',
+      'Try this: 3 sets of push-ups, squats, and planks. 10-15 reps each!',
+    ],
+    'meal_suggestion': [
+      'How about a protein-rich breakfast with eggs, avocado, and whole grain toast?',
+      'For lunch, try a quinoa salad with grilled chicken and mixed vegetables.',
+      'A light dinner of grilled fish with steamed broccoli sounds perfect!',
+    ],
+    'encouragement': [
+      'You\'re doing great! Keep up the good work!',
+      'Every workout counts. You\'re on the right track!',
+      'Consistency is key. You\'ve got this!',
+    ],
+    'default': [
+      'I\'m here to help with your fitness journey. You can ask me about workouts, meals, or general fitness advice.',
+      'Try asking me for workout suggestions or meal ideas!',
+      'I can help you track your progress and stay motivated. What would you like to know?',
+    ],
+  };
 
-  static final List<String> _foodSuggestionResponses = [
-    "Here are some healthy options for you:",
-    "I recommend these nutritious foods:",
-    "Based on your goals, try these options:",
-  ];
+  // Simple intent detection
+  static String detectIntent(String message) {
+    final lowerMessage = message.toLowerCase();
 
-  static final List<String> _workoutSuggestionResponses = [
-    "Here's a great workout for you:",
-    "Try this effective routine:",
-    "I recommend this exercise plan:",
-  ];
+    if (lowerMessage.contains('hello') || 
+        lowerMessage.contains('hi') || 
+        lowerMessage.contains('hey')) {
+      return 'greeting';
+    }
 
-  static final List<FoodItem> _commonFoods = [
-    FoodItem(
-      name: "Grilled Chicken Salad",
-      calories: 350,
-      protein: 35.0,
-      carbs: 15.0,
-      fat: 18.0,
-      imageUrl: "assets/images/chicken_salad.png",
-    ),
-    FoodItem(
-      name: "Protein Smoothie",
-      calories: 250,
-      protein: 25.0,
-      carbs: 30.0,
-      fat: 5.0,
-      imageUrl: "assets/images/smoothie.png",
-    ),
-    FoodItem(
-      name: "Quinoa Bowl",
-      calories: 420,
-      protein: 15.0,
-      carbs: 60.0,
-      fat: 12.0,
-      imageUrl: "assets/images/quinoa_bowl.png",
-    ),
-    FoodItem(
-      name: "Greek Yogurt with Berries",
-      calories: 180,
-      protein: 20.0,
-      carbs: 20.0,
-      fat: 2.0,
-      imageUrl: "assets/images/yogurt.png",
-    ),
-    FoodItem(
-      name: "Avocado Toast",
-      calories: 300,
-      protein: 10.0,
-      carbs: 35.0,
-      fat: 15.0,
-      imageUrl: "assets/images/avocado_toast.png",
-    ),
-  ];
+    if (lowerMessage.contains('workout') || 
+        lowerMessage.contains('exercise') || 
+        lowerMessage.contains('train')) {
+      return 'workout_suggestion';
+    }
 
-  static final List<Workout> _commonWorkouts = [
-    Workout(
-      name: "Push-ups",
-      description: "A classic upper body exercise",
-      gifUrl: "assets/gifs/pushups.gif",
-      duration: 5,
-      caloriesBurned: 70,
-    ),
-    Workout(
-      name: "Squats",
-      description: "Great for building leg strength",
-      gifUrl: "assets/gifs/squats.gif",
-      duration: 5,
-      caloriesBurned: 60,
-    ),
-    Workout(
-      name: "Plank",
-      description: "Core strengthening exercise",
-      gifUrl: "assets/gifs/plank.gif",
-      duration: 3,
-      caloriesBurned: 25,
-    ),
-    Workout(
-      name: "Burpees",
-      description: "Full body cardio exercise",
-      gifUrl: "assets/gifs/burpees.gif",
-      duration: 5,
-      caloriesBurned: 100,
-    ),
-    Workout(
-      name: "Mountain Climbers",
-      description: "Cardio and core workout",
-      gifUrl: "assets/gifs/mountain_climbers.gif",
-      duration: 4,
-      caloriesBurned: 80,
-    ),
-  ];
+    if (lowerMessage.contains('meal') || 
+        lowerMessage.contains('food') || 
+        lowerMessage.contains('eat') || 
+        lowerMessage.contains('lunch') || 
+        lowerMessage.contains('dinner') || 
+        lowerMessage.contains('breakfast')) {
+      return 'meal_suggestion';
+    }
 
-  String getGreeting() {
-    return _greetingResponses[Random().nextInt(_greetingResponses.length)];
+    if (lowerMessage.contains('good') || 
+        lowerMessage.contains('great') || 
+        lowerMessage.contains('motivat') || 
+        lowerMessage.contains('encourag')) {
+      return 'encouragement';
+    }
+
+    return 'default';
   }
 
-  List<FoodItem> getSuggestedFoods(String query) {
-    // In a real app, this would be more sophisticated
-    // For now, we'll return a selection of foods
-    return _commonFoods;
+  // Generate AI response based on intent
+  static String generateResponse(String message) {
+    final intent = detectIntent(message);
+    final responses = _responses[intent] ?? _responses['default']!;
+    
+    // Return a random response from the list
+    return responses[DateTime.now().millisecondsSinceEpoch % responses.length];
   }
 
-  List<Workout> getSuggestedWorkouts(String query) {
-    // In a real app, this would be more sophisticated
-    // For now, we'll return a selection of workouts
-    return _commonWorkouts;
+  // Process user input and return structured response
+  static AIResponse processInput(String userInput) {
+    final intent = detectIntent(userInput);
+    final response = generateResponse(userInput);
+    
+    return AIResponse(
+      intent: intent,
+      response: response,
+      timestamp: DateTime.now(),
+    );
   }
+}
 
-  String getFoodSuggestionResponse() {
-    return _foodSuggestionResponses[Random().nextInt(_foodSuggestionResponses.length)];
-  }
+class AIResponse {
+  final String intent;
+  final String response;
+  final DateTime timestamp;
 
-  String getWorkoutSuggestionResponse() {
-    return _workoutSuggestionResponses[Random().nextInt(_workoutSuggestionResponses.length)];
-  }
-
-  String getConfirmationResponse(String action) {
-    final responses = [
-      "Got it! I've logged that for you.",
-      "Done! I've added that to your records.",
-      "Thanks for letting me know! I've saved that.",
-      "Noted! I've recorded that in your log.",
-    ];
-    return responses[Random().nextInt(responses.length)];
-  }
-
-  String getHelpResponse() {
-    return "I can help you with:\n\n"
-        "• Suggesting healthy foods to eat\n"
-        "• Logging foods you've eaten\n"
-        "• Recommending workouts\n"
-        "• Tracking your exercises\n\n"
-        "Just tell me what you'd like to do!";
-  }
+  AIResponse({
+    required this.intent,
+    required this.response,
+    required this.timestamp,
+  });
 }

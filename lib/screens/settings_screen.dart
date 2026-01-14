@@ -1,86 +1,216 @@
 import 'package:flutter/material.dart';
-import 'package:captain_fit/services/auth_service.dart';
-import 'package:captain_fit/services/sync_service.dart';
-import 'package:captain_fit/core/glass_background.dart';
-import 'package:captain_fit/core/glass_card.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
-
-  @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen> {
-  bool _guestMode = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    final g = await AuthService.isGuestMode();
-    setState(() => _guestMode = g);
-  }
-
-  Future<void> _toggleGuest(bool v) async {
-    await AuthService.setGuestMode(v);
-    setState(() => _guestMode = v);
-  }
-
-  Future<void> _signOut() async {
-    await AuthService.signOut();
-    // navigate to login
-    Navigator.of(context).pushReplacementNamed('/login');
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: GlassBackground(
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Settings', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
-                const SizedBox(height: 12),
-                GlassCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SwitchListTile(
-                        title: const Text('Guest Mode', style: TextStyle(color: Colors.white)),
-                        value: _guestMode,
-                        onChanged: _toggleGuest,
-                      ),
-                      ListTile(
-                        title: const Text('Sync with Supabase', style: TextStyle(color: Colors.white)),
-                        subtitle: const Text('Enable cloud backup & cross-device sync', style: TextStyle(color: Colors.white70)),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.sync, color: Colors.white),
-                          onPressed: () async {
-                            final ok = await SyncService.attemptSync();
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text(ok ? 'Sync completed' : 'Sync failed or no connection'),
-                            ));
-                          },
-                        ),
-                      ),
-                      ListTile(
-                        title: const Text('Sign out', style: TextStyle(color: Colors.white)),
-                        onTap: _signOut,
-                      )
-                    ],
-                  ),
-                )
-              ],
-            ),
-          ),
+      appBar: AppBar(
+        title: const Text('Settings'),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            const _ProfileSection(),
+            const _PreferencesSection(),
+            const _NotificationsSection(),
+            const _DataSection(),
+            const _AboutSection(),
+          ],
         ),
+      ),
+    );
+  }
+}
+
+class _ProfileSection extends StatelessWidget {
+  const _ProfileSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          ListTile(
+            leading: const CircleAvatar(
+              child: Icon(Icons.person),
+            ),
+            title: const Text('John Doe'),
+            subtitle: const Text('john.doe@example.com'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              // Edit profile
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.fitness_center),
+            title: const Text('Fitness Goals'),
+            subtitle: const Text('Lose weight, build muscle'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              // Set goals
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PreferencesSection extends StatelessWidget {
+  const _PreferencesSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          const ListTile(
+            leading: Icon(Icons.color_lens),
+            title: Text('Theme'),
+            subtitle: Text('Dark mode'),
+          ),
+          const Divider(),
+          SwitchListTile(
+            secondary: const Icon(Icons.notifications),
+            title: const Text('Notifications'),
+            value: true,
+            onChanged: (value) {
+              // Toggle notifications
+            },
+          ),
+          const Divider(),
+          SwitchListTile(
+            secondary: const Icon(Icons.animation),
+            title: const Text('Animations'),
+            value: true,
+            onChanged: (value) {
+              // Toggle animations
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NotificationsSection extends StatelessWidget {
+  const _NotificationsSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          const ListTile(
+            title: Text('Notifications'),
+            subtitle: Text('Manage notification preferences'),
+          ),
+          const Divider(),
+          SwitchListTile(
+            title: const Text('Workout Reminders'),
+            value: true,
+            onChanged: (value) {
+              // Toggle workout reminders
+            },
+          ),
+          const Divider(),
+          SwitchListTile(
+            title: const Text('Meal Reminders'),
+            value: true,
+            onChanged: (value) {
+              // Toggle meal reminders
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DataSection extends StatelessWidget {
+  const _DataSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          const ListTile(
+            title: Text('Data Management'),
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.backup),
+            title: const Text('Backup Data'),
+            onTap: () {
+              // Backup data
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.restore),
+            title: const Text('Restore Data'),
+            onTap: () {
+              // Restore data
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.delete),
+            title: const Text('Clear Data'),
+            onTap: () {
+              // Clear data
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AboutSection extends StatelessWidget {
+  const _AboutSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          const ListTile(
+            title: Text('About'),
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.info),
+            title: const Text('Version'),
+            subtitle: const Text('1.0.0'),
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.description),
+            title: const Text('Terms of Service'),
+            onTap: () {
+              // Show terms
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.privacy_tip),
+            title: const Text('Privacy Policy'),
+            onTap: () {
+              // Show privacy policy
+            },
+          ),
+        ],
       ),
     );
   }

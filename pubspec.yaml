@@ -1,8 +1,6 @@
 name: captain_fit
 description: "CaptainFit — offline-first fitness & diet assistant (MVP)."
-
 publish_to: 'none'
-
 version: 1.0.0+1
 
 environment:
@@ -27,10 +25,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  
   assets:
     - assets/images/
     - assets/mockups/
-
-  # Add sqflite and path_provider for local DB
-  # (these live under the main `dependencies` mapping)
+    - .env
