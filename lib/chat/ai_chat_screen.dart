@@ -22,6 +22,7 @@ class _AIChatScreenState extends State<AIChatScreen>
   @override
   void initState() {
     super.initState();
+    // Default durations; they may be overridden in didChangeDependencies
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
@@ -31,6 +32,17 @@ class _AIChatScreenState extends State<AIChatScreen>
       vsync: this,
     );
     _loadMessages();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Use accessibleNavigation as the platform gesture-based preference for reduced motion
+    final reduceMotion = MediaQuery.of(context).accessibleNavigation;
+    if (reduceMotion) {
+      _slideController.duration = const Duration(milliseconds: 0);
+      _fadeController.duration = const Duration(milliseconds: 0);
+    }
   }
 
   @override
@@ -54,19 +66,47 @@ class _AIChatScreenState extends State<AIChatScreen>
     try {
       await LocalStorage.saveMessage(text, 'user');
 
-      final detectedFood = AIAssistant.detectFood(text);
-      final detectedExercise = AIAssistant.detectExercise(text);
-
-      if (AIAssistant.isFoodLog(text) && detectedFood != null) {
-        await LocalStorage.saveMeal(text, detectedFood: detectedFood);
+      // Advice queries should not create logs; just respond with guidance
+      if (AIAssistant.isAdviceQuery(text)) {
+        final response = AIAssistant.generateAIResponse(text);
+        await Future.delayed(const Duration(milliseconds: 400));
+        await LocalStorage.saveMessage(response, 'assistant');
+        _controller.clear();
+        await _loadMessages();
+        _slideController.forward(from: 0.0);
+        _fadeController.forward(from: 0.0);
+        return;
       }
 
-      if (AIAssistant.isExerciseLog(text) && detectedExercise != null) {
-        await LocalStorage.saveWorkout(text, detectedExercise: detectedExercise);
+      // For confirmation/log intents, prefer the new generic detection
+      if (AIAssistant.isLogIntent(text)) {
+        final detectedFood = AIAssistant.detectFood(text);
+        final detectedExercise = AIAssistant.detectExercise(text);
+
+        if (detectedFood != null) {
+          await LocalStorage.saveMeal(text, detectedFood: detectedFood);
+        } else if (detectedExercise != null) {
+          await LocalStorage.saveWorkout(text, detectedExercise: detectedExercise);
+        } else {
+          // Generic food log when no DB match
+          await LocalStorage.saveMeal(text);
+        }
+
+        final response = AIAssistant.generateAIResponse(text);
+        await Future.delayed(const Duration(milliseconds: 400));
+        await LocalStorage.saveMessage(response, 'assistant');
+
+        _controller.clear();
+        await _loadMessages();
+
+        _slideController.forward(from: 0.0);
+        _fadeController.forward(from: 0.0);
+        return;
       }
 
+      // Fallback: respond conversationally
       final response = AIAssistant.generateAIResponse(text);
-      await Future.delayed(const Duration(milliseconds: 600));
+      await Future.delayed(const Duration(milliseconds: 400));
       await LocalStorage.saveMessage(response, 'assistant');
 
       _controller.clear();
@@ -218,51 +258,59 @@ class _AIChatScreenState extends State<AIChatScreen>
   }
 
   Widget _buildInputArea() {
+    final reduceMotion = MediaQuery.of(context).accessibleNavigation;
     return Padding(
       padding: const EdgeInsets.all(12),
       child: Row(
         children: [
           Expanded(
-            child: TextField(
-              controller: _controller,
-              enabled: !_isSending,
-              maxLines: 1,
-              decoration: InputDecoration(
-                hintText: 'I just ate 2 eggs and banana...',
-                hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+            child: Semantics(
+              label: 'Message input',
+              child: TextField(
+                controller: _controller,
+                enabled: !_isSending,
+                maxLines: 1,
+                decoration: InputDecoration(
+                  hintText: 'I just ate 2 eggs and banana...',
+                  hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.05),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                  ),
                 ),
               ),
             ),
           ),
           const SizedBox(width: 8),
-          ElevatedButton(
-            onPressed: _isSending ? null : _send,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF8B5CF6),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          Semantics(
+            label: 'Send message',
+            button: true,
+            child: ElevatedButton(
+              onPressed: _isSending ? null : _send,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF8B5CF6),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+              child: _isSending
+                  ? SizedBox(
+                      width: reduceMotion ? 0 : 24,
+                      height: reduceMotion ? 0 : 24,
+                      child: const CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(Colors.white),
+                      ),
+                    )
+                  : const Icon(Icons.send, size: 20),
             ),
-            child: _isSending
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation(Colors.white),
-                    ),
-                  )
-                : const Icon(Icons.send, size: 20),
           )
         ],
       ),

@@ -14,7 +14,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   final AIService _aiService = AIService();
   final StorageService _storageService = StorageService();
   List<Workout> _workouts = [];
-  List<Workout> _completedWorkouts = [];
+  final List<Workout> _completedWorkouts = [];
 
   @override
   void initState() {

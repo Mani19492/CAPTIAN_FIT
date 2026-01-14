@@ -14,6 +14,11 @@ dependencies:
   cupertino_icons: ^1.0.8
   shared_preferences: ^2.2.2
   fl_chart: ^0.68.0
+  connectivity_plus: ^4.0.1
+  flutter_dotenv: ^5.0.2
+  supabase_flutter: ^1.4.0
+  sqflite: ^2.2.8+4
+  path_provider: ^2.0.14
 
 dev_dependencies:
   flutter_test:
@@ -25,4 +30,7 @@ flutter:
   
   assets:
     - assets/images/
-    - assets/gifs/
+    - assets/mockups/
+
+  # Add sqflite and path_provider for local DB
+  # (these live under the main `dependencies` mapping)

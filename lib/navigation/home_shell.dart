@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../chat/chat_screen.dart';
 import '../workout/workout_screen.dart';
+import '../screens/summary_screen.dart';
+import '../screens/settings_screen.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -13,11 +15,16 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int index = 0;
 
-  final pages = const [
-    DashboardScreen(),
-    ChatScreen(),
-    WorkoutScreen(),
+  final pages = [
+    const DashboardScreen(),
+    const ChatScreen(),
+    const WorkoutScreen(),
+    const SummaryScreen(),
   ];
+
+  void _openSettings() {
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen()));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +37,12 @@ class _HomeShellState extends State<HomeShell> {
           BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Chat'),
           BottomNavigationBarItem(icon: Icon(Icons.fitness_center), label: 'Workout'),
+          BottomNavigationBarItem(icon: Icon(Icons.auto_graph), label: 'Summary'),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openSettings,
+        child: const Icon(Icons.settings),
       ),
     );
   }

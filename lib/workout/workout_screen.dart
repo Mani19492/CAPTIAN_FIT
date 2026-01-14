@@ -61,7 +61,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       ),
                     ),
                   )
-                  .toList(),
+                  ,
               const SizedBox(height: 24),
               const Text("Today's Workouts", style: TextStyle(fontSize: 18, color: Color(0xFFFFFFFF), fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
@@ -92,7 +92,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                         ),
                       ),
                     )
-                    .toList(),
+                    ,
             ],
           ),
         ),

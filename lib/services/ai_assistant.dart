@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
-
 class FoodSuggestion {
   final String name;
   final String description;
@@ -40,7 +37,7 @@ class AIAssistant {
     'trained', 'ran', 'lifted', 'squats', 'pushups', 'gym', 'exercise'
   ];
 
-  static const Map<String, FoodSuggestion> foodDatabase = {
+  static final Map<String, FoodSuggestion> foodDatabase = {
     'chicken': FoodSuggestion(
       name: 'Grilled Chicken Breast',
       description: 'Lean protein, rich in nutrients. Perfect for muscle building.',
@@ -83,7 +80,7 @@ class AIAssistant {
     ),
   };
 
-  static const Map<String, ExerciseSuggestion> exerciseDatabase = {
+  static final Map<String, ExerciseSuggestion> exerciseDatabase = {
     'pushups': ExerciseSuggestion(
       name: 'Push-ups',
       description: 'Great for chest, shoulders, and triceps. No equipment needed.',
@@ -148,7 +145,32 @@ class AIAssistant {
     return null;
   }
 
+  // General log confirmation keywords ("I ate", "I had", etc.)
+  static const List<String> logConfirmationKeywords = [
+    'i ate', 'i had', 'i drank', 'i consumed', 'ate', 'had', 'drank', 'consumed'
+  ];
+
+  // Phrases that indicate advice/permission requests (no automatic logging)
+  static const List<String> advicePhrases = [
+    'can i eat', 'is it okay', 'is it ok if', 'should i eat', 'can i have', 'is it okay if'
+  ];
+
+  static bool isLogIntent(String message) {
+    final lowerMessage = message.toLowerCase();
+    final hasConfirmation = logConfirmationKeywords.any((kw) => lowerMessage.contains(kw));
+    final isAdvice = advicePhrases.any((kw) => lowerMessage.contains(kw));
+    return hasConfirmation && !isAdvice;
+  }
+
+  static bool isAdviceQuery(String message) {
+    final lowerMessage = message.toLowerCase();
+    return advicePhrases.any((kw) => lowerMessage.contains(kw));
+  }
+
   static bool isFoodLog(String message) {
+    // Keep for backward compatibility: returns true when message both contains
+    // a food keyword and a recognizable food from the DB. Prefer using
+    // `isLogIntent` for generic confirmation detection.
     final lowerMessage = message.toLowerCase();
     final hasFoodKeyword = foodKeywords.any((kw) => lowerMessage.contains(kw));
     final hasFood = detectFood(message) != null;
@@ -199,16 +221,21 @@ class AIAssistant {
       return '👋 I can help you with:\n• Food suggestions\n• Exercise recommendations\n• Logging meals and workouts\n• Tracking your progress';
     }
 
-    final detectedFood = detectFood(message);
-    if (isFoodLog(message) && detectedFood != null) {
-      final food = foodDatabase[detectedFood];
-      return '✅ Logged: ${food?.emoji} ${food?.name}\n\n💡 ${food?.description}';
-    }
+    if (isLogIntent(message)) {
+      final detectedFood = detectFood(message);
+      if (detectedFood != null) {
+        final food = foodDatabase[detectedFood];
+        return '✅ Logged: ${food?.emoji} ${food?.name}\n\n💡 ${food?.description}';
+      }
 
-    final detectedExercise = detectExercise(message);
-    if (isExerciseLog(message) && detectedExercise != null) {
-      final exercise = exerciseDatabase[detectedExercise];
-      return '✅ Logged: 💪 ${exercise?.name}\n\n📝 ${exercise?.description}';
+      final detectedExercise = detectExercise(message);
+      if (detectedExercise != null) {
+        final exercise = exerciseDatabase[detectedExercise];
+        return '✅ Logged: 💪 ${exercise?.name}\n\n📝 ${exercise?.description}';
+      }
+
+      // Generic confirmation-based log when no known food/exercise is detected
+      return '✅ Logged: Got it. I\'ve saved that for you.';
     }
 
     return '💬 That sounds great! Would you like to:\n• Log a meal\n• Log a workout\n• Get suggestions\n• View progress';

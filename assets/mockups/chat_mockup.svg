@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1280" viewBox="0 0 720 1280">
+  <rect width="100%" height="100%" fill="#0A0E27" />
+  <g opacity="0.95">
+    <rect x="24" y="48" rx="28" ry="28" width="672" height="1200" fill="#ffffff" opacity="0.02" />
+    <g transform="translate(48,84)">
+      <rect x="0" y="0" rx="22" width="624" height="84" fill="#ffffff" opacity="0.04" />
+      <text x="24" y="46" fill="#ffffff" font-size="22" font-family="Arial">Captain Fit AI</text>
+
+      <!-- Chat bubbles -->
+      <rect x="0" y="120" rx="18" width="420" height="84" fill="#ffffff" opacity="0.06" />
+      <rect x="204" y="220" rx="18" width="420" height="84" fill="#8B5CF6" opacity="0.15" />
+
+      <rect x="0" y="320" rx="18" width="420" height="60" fill="#ffffff" opacity="0.06" />
+
+      <!-- Bottom input -->
+      <rect x="0" y="520" rx="12" width="512" height="56" fill="#ffffff" opacity="0.05" />
+      <rect x="536" y="520" rx="12" width="88" height="56" fill="#8B5CF6" opacity="0.16" />
+    </g>
+  </g>
+</svg>

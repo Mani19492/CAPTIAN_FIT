@@ -17,8 +17,8 @@ class _FuturisticHomeScreenState extends State<FuturisticHomeScreen>
   List<DailyLog> _dailyLogs = [];
   int _totalCalories = 0;
   int _totalBurned = 0;
-  int _totalWorkouts = 0;
-  double _calorieTarget = 2500;
+
+  final double _calorieTarget = 2500;
   late AnimationController _fadeController;
   late AnimationController _slideController;
 
@@ -60,7 +60,6 @@ class _FuturisticHomeScreenState extends State<FuturisticHomeScreen>
 
       _totalCalories = todayLog.foods.fold(0, (sum, food) => sum + food.calories);
       _totalBurned = todayLog.workouts.fold(0, (sum, w) => sum + w.caloriesBurned);
-      _totalWorkouts = todayLog.workouts.length;
     });
   }
 
@@ -72,11 +71,17 @@ class _FuturisticHomeScreenState extends State<FuturisticHomeScreen>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.asset(
-              'assets/images/image-removebg-preview_(2).png',
+              'assets/images/logo.png',
               height: 32,
               width: 32,
               errorBuilder: (context, error, stackTrace) {
-                return const Icon(Icons.flash_on, color: FuturisticTheme.primaryRed);
+                // Fallback to the previously committed asset if the new logo isn't available
+                return Image.asset(
+                  'assets/images/image-removebg-preview_(2).png',
+                  height: 32,
+                  width: 32,
+                  errorBuilder: (context, e, s) => const Icon(Icons.flash_on, color: FuturisticTheme.primaryRed),
+                );
               },
             ),
             const SizedBox(width: 8),
@@ -146,7 +151,6 @@ class _FuturisticHomeScreenState extends State<FuturisticHomeScreen>
   }
 
   Widget _buildMainStats() {
-    final calorieBalance = _totalCalories - _totalBurned;
     final remaining = (_calorieTarget - _totalCalories).clamp(0, _calorieTarget);
 
     return SlideTransition(
@@ -293,7 +297,7 @@ class _FuturisticHomeScreenState extends State<FuturisticHomeScreen>
                         radius: 60,
                       ),
                       PieChartSectionData(
-                        value: (target - intake).clamp(0, target),
+                        value: (target - intake).clamp(0.0, target),
                         title: '',
                         color: FuturisticTheme.darkCardBg2,
                         radius: 60,
@@ -487,9 +491,9 @@ class _FuturisticHomeScreenState extends State<FuturisticHomeScreen>
     }
 
     final total = totalProtein + totalCarbs + totalFat;
-    final proteinPercent = total > 0 ? totalProtein / total * 100 : 0;
-    final carbsPercent = total > 0 ? totalCarbs / total * 100 : 0;
-    final fatPercent = total > 0 ? totalFat / total * 100 : 0;
+    final proteinPercent = total > 0 ? totalProtein / total * 100 : 0.0;
+    final carbsPercent = total > 0 ? totalCarbs / total * 100 : 0.0;
+    final fatPercent = total > 0 ? totalFat / total * 100 : 0.0;
 
     return Container(
       padding: const EdgeInsets.all(20),

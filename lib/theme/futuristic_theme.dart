@@ -34,7 +34,6 @@ class FuturisticTheme {
         primary: primaryRed,
         secondary: accentCyan,
         surface: darkCardBg,
-        background: darkBg,
         error: primaryRed,
         brightness: Brightness.dark,
       ),
@@ -69,8 +68,8 @@ class FuturisticTheme {
         backgroundColor: darkCardBg.withOpacity(0.7),
         elevation: 0,
         indicatorColor: primaryRed.withOpacity(0.2),
-        labelTextStyle: MaterialStateProperty.resolveWith<TextStyle>(
-          (Set<MaterialState> states) => states.contains(MaterialState.selected)
+        labelTextStyle: WidgetStateProperty.resolveWith<TextStyle>(
+          (Set<WidgetState> states) => states.contains(WidgetState.selected)
               ? const TextStyle(color: primaryRed, fontWeight: FontWeight.bold)
               : const TextStyle(color: textSecondary),
         ),

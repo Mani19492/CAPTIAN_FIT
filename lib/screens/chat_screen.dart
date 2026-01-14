@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:captain_fit/models/fitness_data.dart';
 import 'package:captain_fit/services/ai_service.dart';
-import 'package:captain_fit/services/storage_service.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -12,11 +11,10 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final AIService _aiService = AIService();
-  final StorageService _storageService = StorageService();
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   
-  List<ChatMessage> _messages = [];
+  final List<ChatMessage> _messages = [];
   bool _isSending = false;
 
   @override
