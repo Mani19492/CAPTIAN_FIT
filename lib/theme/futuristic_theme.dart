@@ -26,14 +26,14 @@ class FuturisticTheme {
       background: darkBg,
     ),
     scaffoldBackgroundColor: darkBg,
-    appBarTheme: const AppBarTheme(
+    appBarTheme: AppBarTheme(
       backgroundColor: darkCardBg,
       elevation: 0,
     ),
-    cardTheme: const CardTheme(
+    cardTheme: CardThemeData(
       color: darkCardBg,
       elevation: 4,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(12)),
       ),
     ),
@@ -47,16 +47,16 @@ class FuturisticTheme {
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       ),
     ),
-    inputDecorationTheme: const InputDecorationTheme(
-      border: OutlineInputBorder(
+    inputDecorationTheme: InputDecorationTheme(
+      border: const OutlineInputBorder(
         borderRadius: BorderRadius.all(Radius.circular(8)),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.all(Radius.circular(8)),
+        borderRadius: const BorderRadius.all(Radius.circular(8)),
         borderSide: BorderSide(color: borderColor),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.all(Radius.circular(8)),
+        borderRadius: const BorderRadius.all(Radius.circular(8)),
         borderSide: BorderSide(color: primaryBlue),
       ),
     ),

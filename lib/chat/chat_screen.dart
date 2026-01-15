@@ -13,6 +13,7 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
+  final LocalStorage _storage = LocalStorage();
   List<Map<String, dynamic>> _messages = [];
   bool _isSending = false;
 
@@ -23,18 +24,41 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _loadMessages() async {
-    final parsed = await LocalStorage.getParsedMeals();
-    setState(() => _messages = parsed);
+    debugPrint('[ChatScreen] _loadMessages() called');
+    // Ensure SharedPreferences is initialized
+    await _storage.init();
+    final meals = await _storage.getMeals();
+
+    setState(() {
+      _messages = meals.map((meal) => {
+        'text': meal.name,
+        'time': meal.timestamp.toLocal().toString(),
+      }).toList();
+    });
   }
 
   Future<void> _send() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
+    debugPrint('[ChatScreen] _send() called with: $text');
     setState(() => _isSending = true);
     try {
-      await LocalStorage.saveMeal(text);
+      await _storage.init();
+      final meals = await _storage.getMeals();
+      final meal = Meal(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        name: text,
+        calories: 0,
+        timestamp: DateTime.now(),
+        clientId: '',
+      );
+      meals.add(meal);
+      await _storage.saveMeals(meals);
       _controller.clear();
       await _loadMessages();
+    } catch (e, st) {
+      debugPrint('[ChatScreen] _send() error: $e\n$st');
+      rethrow;
     } finally {
       setState(() => _isSending = false);
     }
@@ -47,9 +71,24 @@ class _ChatScreenState extends State<ChatScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text('Chat', style: TextStyle(fontSize: 22)),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    // App logo (put your image at assets/images/app_logo.png)
+                    SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: Image(
+                        image: const AssetImage('assets/images/app_logo.png'),
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stack) => const Icon(Icons.fitness_center),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text('Chat', style: TextStyle(fontSize: 22)),
+                  ],
+                ),
               ),
               Expanded(
                 child: _messages.isEmpty

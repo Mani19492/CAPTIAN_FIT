@@ -39,6 +39,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
     final message = _textController.text.trim();
     if (message.isEmpty) return;
 
+    debugPrint('[AIChatScreen] _sendMessage() called with: $message');
+
     _textController.clear();
 
     setState(() {
@@ -67,7 +69,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
           );
         }
       });
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('[AIChatScreen] _sendMessage() error: $e\n$st');
       setState(() {
         _isLoading = false;
       });
@@ -84,8 +87,23 @@ class _AIChatScreenState extends State<AIChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AI Fitness Assistant'),
         centerTitle: true,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 28,
+              height: 28,
+              child: Image(
+                image: const AssetImage('assets/images/app_logo.png'),
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stack) => const Icon(Icons.smart_toy),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Text('AI Fitness Assistant'),
+          ],
+        ),
       ),
       body: Column(
         children: [
@@ -150,16 +168,16 @@ class _LoadingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Align(
+    return Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        margin: EdgeInsets.all(8),
-        padding: EdgeInsets.all(12),
-        decoration: BoxDecoration(
+        margin: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(12),
+        decoration: const BoxDecoration(
           color: Color(0xFF1E1E1E),
           borderRadius: BorderRadius.all(Radius.circular(16)),
         ),
-        child: SizedBox(
+        child: const SizedBox(
           width: 24,
           height: 24,
           child: CircularProgressIndicator(strokeWidth: 2),

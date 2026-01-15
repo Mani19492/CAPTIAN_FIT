@@ -23,6 +23,7 @@ class _HomeShellState extends State<HomeShell> {
   ];
 
   void _openSettings() {
+    debugPrint('[HomeShell] _openSettings() called');
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen()));
   }
 

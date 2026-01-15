@@ -25,6 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
+    debugPrint('[LoginScreen] _handleLogin() called');
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -65,6 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleSignUp() async {
+    debugPrint('[LoginScreen] _handleSignUp() called');
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {

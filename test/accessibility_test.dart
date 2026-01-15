@@ -5,7 +5,7 @@ void main() {
   group('Accessibility Tests', () {
     testWidgets('App has proper accessibility semantics', (WidgetTester tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
+        MaterialApp(
           home: Scaffold(
             appBar: AppBar(
               title: Text('Test'),

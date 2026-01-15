@@ -109,7 +109,7 @@ class _FuturisticHomeScreenState extends State<FuturisticHomeScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_none),
-            onPressed: () {},
+            onPressed: () { debugPrint('[FuturisticHome] notifications pressed'); },
           ),
           const SizedBox(width: 8),
         ],
@@ -168,7 +168,7 @@ class _FuturisticHomeScreenState extends State<FuturisticHomeScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.info_outline),
-            onPressed: () {},
+            onPressed: () { debugPrint('[FuturisticHome] streak info pressed'); },
           ),
         ],
       ),
@@ -268,22 +268,22 @@ class _FuturisticHomeScreenState extends State<FuturisticHomeScreen> {
             _buildActionItem(
               icon: Icons.restaurant,
               label: 'Log Meal',
-              onTap: () {},
+              onTap: () { debugPrint('[FuturisticHome] QuickAction: Log Meal'); },
             ),
             _buildActionItem(
               icon: Icons.fitness_center,
               label: 'Workout',
-              onTap: () {},
+              onTap: () { debugPrint('[FuturisticHome] QuickAction: Workout'); },
             ),
             _buildActionItem(
               icon: Icons.chat_bubble_outline,
               label: 'Chat',
-              onTap: () {},
+              onTap: () { debugPrint('[FuturisticHome] QuickAction: Chat'); },
             ),
             _buildActionItem(
               icon: Icons.bar_chart,
               label: 'Report',
-              onTap: () {},
+              onTap: () { debugPrint('[FuturisticHome] QuickAction: Report'); },
             ),
           ],
         ),

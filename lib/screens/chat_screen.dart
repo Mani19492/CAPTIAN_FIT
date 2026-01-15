@@ -202,16 +202,16 @@ class _LoadingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Align(
+    return Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        margin: EdgeInsets.all(8),
-        padding: EdgeInsets.all(12),
-        decoration: BoxDecoration(
+        margin: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(12),
+        decoration: const BoxDecoration(
           color: Color(0xFF1E1E1E),
           borderRadius: BorderRadius.all(Radius.circular(16)),
         ),
-        child: SizedBox(
+        child: const SizedBox(
           width: 24,
           height: 24,
           child: CircularProgressIndicator(strokeWidth: 2),
