@@ -1,6 +1,13 @@
 # CaptainFit
 
 CaptainFit is an interactive, animated offline-first mobile fitness & diet assistant built with Flutter.
+# CaptainFit
+
+![Version](https://img.shields.io/badge/version-v0.1.0-blue)
+![Flutter](https://img.shields.io/badge/Flutter-Framework-blue)
+![Dart](https://img.shields.io/badge/Dart-Language-0175C2)
+![Status](https://img.shields.io/badge/status-MVP-orange)
+
 
 ## Features
 
